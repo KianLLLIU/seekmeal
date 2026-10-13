@@ -379,6 +379,23 @@
     .dish + .dish { border-top: 1px solid #edf2f0; }
     .dish-title { display: flex; justify-content: space-between; gap: 12px; font-weight: 720; }
     .dish-title span { color: var(--primary); font-size: 12px; }
+    .dish-title .dish-name { color: inherit; font-size: inherit; }
+
+    .log-list { display: grid; gap: 7px; }
+    .log-row {
+      display: flex; align-items: center; justify-content: space-between; gap: 10px;
+      border: 1px solid var(--line); border-radius: 10px; background: #fff;
+      padding: 8px 11px; font-size: 12.5px;
+    }
+    .log-row .log-main { min-width: 0; }
+    .log-row .log-meal { color: var(--primary); font-weight: 680; }
+    .log-row .log-meta { color: var(--muted); }
+    .log-row button {
+      flex: 0 0 auto; border: 0; border-radius: 7px; background: transparent;
+      color: var(--danger); font-size: 12px; padding: 4px 8px;
+    }
+    .log-row button:hover { background: var(--danger-soft); }
+    .log-row button:disabled { opacity: .5; cursor: wait; }
     .dish-meta { margin: 5px 0 0; color: var(--muted); font-size: 12px; }
 
     .shopping-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
@@ -481,10 +498,10 @@
       </aside>
     </section>
 
-    <nav class="tabs" aria-label="核心功能">
-      <button class="tab active" type="button" data-tab="profile">身体档案与目标</button>
-      <button class="tab" type="button" data-tab="analysis">饮食分析</button>
-      <button class="tab" type="button" data-tab="plan">一日排餐</button>
+    <nav class="tabs" role="tablist" aria-label="核心功能">
+      <button class="tab active" type="button" role="tab" aria-selected="true" data-tab="profile">身体档案与目标</button>
+      <button class="tab" type="button" role="tab" aria-selected="false" data-tab="analysis">饮食分析</button>
+      <button class="tab" type="button" role="tab" aria-selected="false" data-tab="plan">一日排餐</button>
     </nav>
 
     <section id="profile" class="panel active" aria-labelledby="profile-heading">
@@ -541,9 +558,9 @@
                 </select>
               </div>
               <div class="field">
-                <label for="weekly-delta">每周体重变化（kg）</label>
-                <input id="weekly-delta" name="weekly_delta_kg" type="number" value="0" min="-1" max="1" step="0.05">
-                <div class="hint">减脂填负值，增重填正值。</div>
+                <label for="weekly-delta">每周体重变化幅度（kg）</label>
+                <input id="weekly-delta" name="weekly_delta_kg" type="number" value="0" min="0" max="1.5" step="0.05">
+                <div class="hint">只填幅度即可，增减方向由上面的「目标」决定。</div>
               </div>
               <div class="field full">
                 <label for="body-fat">体脂率（%，可选）</label>
@@ -598,7 +615,7 @@
               </div>
               <div class="field full">
                 <label for="meal-text">吃了什么</label>
-                <textarea id="meal-text" name="text" placeholder="例如：一碗米饭、鸡胸肉100g、一个鸡蛋" required>一碗米饭 鸡胸肉100g</textarea>
+                <textarea id="meal-text" name="text" maxlength="500" placeholder="例如：一碗米饭、鸡胸肉100g、一个鸡蛋" required>一碗米饭 鸡胸肉100g</textarea>
                 <div class="hint">提交后会累计到今日记录，并按当前档案目标评估。</div>
               </div>
             </div>
@@ -746,6 +763,13 @@
     function setBusy(form, busy) {
       form.querySelectorAll("button").forEach((button) => {
         button.disabled = busy;
+        if (busy) {
+          if (!button.dataset.label) button.dataset.label = button.textContent;
+          button.textContent = "处理中…";
+        } else if (button.dataset.label) {
+          button.textContent = button.dataset.label;
+          delete button.dataset.label;
+        }
       });
     }
 
@@ -781,9 +805,9 @@
       return payload;
     }
 
-    async function checkHealth() {
+    async function checkHealth(silent = false) {
       elements.serviceChip.dataset.state = "checking";
-      elements.serviceText.textContent = "正在连接本地服务";
+      elements.serviceText.textContent = "正在连接服务";
       try {
         const health = await apiRequest("/health", { method: "GET" });
         elements.serviceChip.dataset.state = "ok";
@@ -791,9 +815,12 @@
       } catch (error) {
         elements.serviceChip.dataset.state = "error";
         elements.serviceText.textContent = "服务未启动";
-        ["profile-message", "meal-message", "plan-message"].forEach((id) => {
-          showMessage(id, error.message, "error");
-        });
+        // 轮询失败时不覆盖用户正在看的提示
+        if (!silent) {
+          ["profile-message", "meal-message", "plan-message"].forEach((id) => {
+            showMessage(id, error.message, "error");
+          });
+        }
       }
     }
 
@@ -831,13 +858,22 @@
         </div>`;
     }
 
-    function renderSummary(data, added = []) {
+    function renderSummary(data, added = [], entries = []) {
       const totals = data.totals || {};
       const targets = data.targets || {};
       const evaluations = Array.isArray(data.evaluations) ? data.evaluations : [];
       const risks = Array.isArray(data.risks) ? data.risks : [];
       const addedHtml = added.length
         ? `<div class="pill-row">${added.map((item) => `<span class="pill">已记录 ${escapeHtml(item.name)} ${formatNumber(item.grams)}g · ${formatNumber(item.kcal)} kcal</span>`).join("")}</div>`
+        : "";
+      const entriesHtml = entries.length
+        ? `<h3 class="subheading">今日已记录（${entries.length} 条）</h3>
+           <div class="log-list">${entries.map((item, index) => `
+             <div class="log-row">
+               <div class="log-main"><span class="log-meal">${escapeHtml(item.meal)}</span> ${escapeHtml(item.name)}
+                 <span class="log-meta">${formatNumber(item.grams)}g · ${formatNumber(item.kcal)} kcal</span></div>
+               <button type="button" data-index="${index}" aria-label="删除这条记录">删除</button>
+             </div>`).join("")}</div>`
         : "";
       const progressHtml = evaluations.map((item) => {
         const ratio = Number(item.ratio || 0);
@@ -855,6 +891,7 @@
       elements.analysisResult.className = "";
       elements.analysisResult.innerHTML = `
         ${addedHtml}
+        ${entriesHtml}
         <div class="metric-grid">
           ${metric("热量", totals.kcal, "kcal")}
           ${metric("蛋白质", totals.protein, "g")}
@@ -891,7 +928,7 @@
           <div class="meal-head"><h3>${escapeHtml(meal.meal)}</h3><span>目标约 ${formatNumber(meal.target_kcal)} kcal · 小计 ${formatNumber(meal.subtotal?.kcal)} kcal</span></div>
           ${(meal.dishes || []).map((dish) => `
             <div class="dish">
-              <div class="dish-title"><span style="color:inherit;font-size:inherit">${escapeHtml(dish.recipe)}</span><span>${formatNumber(dish.nutrition?.kcal)} kcal</span></div>
+              <div class="dish-title"><span class="dish-name">${escapeHtml(dish.recipe)}</span><span>${formatNumber(dish.nutrition?.kcal)} kcal</span></div>
               <p class="dish-meta">份量 ×${formatNumber(dish.scale)} · ${formatNumber(dish.minutes)} 分钟 · ${escapeHtml((dish.tags || []).join(" / "))}</p>
               <p class="dish-meta">${(dish.ingredients || []).map((item) => `${escapeHtml(item.name)} ${formatNumber(item.grams)}g`).join("、")}</p>
             </div>`).join("")}
@@ -910,21 +947,33 @@
     async function loadSummary(showSuccess = false, added = []) {
       const userId = document.getElementById("meal-user").value.trim() || "default";
       const data = await apiRequest(`/api/summary/${encodeURIComponent(userId)}`, { method: "GET" });
-      renderSummary(data, added);
+      let entries = [];
+      try {
+        const logData = await apiRequest(`/api/logs/${encodeURIComponent(userId)}`, { method: "GET" });
+        entries = Array.isArray(logData.entries) ? logData.entries : [];
+      } catch (error) {
+        entries = [];
+      }
+      renderSummary(data, added, entries);
       if (showSuccess) showMessage("meal-message", "饮食已记录，营养汇总已更新。", "success");
     }
 
     document.querySelectorAll(".tab").forEach((tab) => {
       tab.addEventListener("click", () => {
-        document.querySelectorAll(".tab").forEach((item) => item.classList.remove("active"));
+        document.querySelectorAll(".tab").forEach((item) => {
+          item.classList.remove("active");
+          item.setAttribute("aria-selected", "false");
+        });
         document.querySelectorAll(".panel").forEach((panel) => panel.classList.remove("active"));
         tab.classList.add("active");
+        tab.setAttribute("aria-selected", "true");
         document.getElementById(tab.dataset.tab).classList.add("active");
       });
     });
 
     elements.goal.addEventListener("change", () => {
-      const suggested = { lose: -0.5, maintain: 0, gain: 0.25 };
+      // 只填幅度，方向由 goal 决定（后端按 goal 归一化符号）
+      const suggested = { lose: 0.5, maintain: 0, gain: 0.25 };
       elements.weeklyDelta.value = suggested[elements.goal.value] ?? 0;
     });
 
@@ -975,7 +1024,8 @@
         const added = await apiRequest("/api/logs", { method: "POST", body: JSON.stringify(body) });
         await loadSummary(true, added.added || []);
       } catch (error) {
-        showMessage("meal-message", error.message, "error");
+        const hint = /请先/.test(error.message) ? "（请先切到「身体档案与目标」保存档案）" : "";
+        showMessage("meal-message", error.message + hint, "error");
       } finally {
         setBusy(elements.mealForm, false);
       }
@@ -991,6 +1041,23 @@
         showMessage("meal-message", error.message, "error");
       } finally {
         setBusy(elements.mealForm, false);
+      }
+    });
+
+    // 今日记录支持逐条删除（后端 DELETE /api/logs/{user}/{index}）
+    elements.analysisResult.addEventListener("click", async (event) => {
+      const button = event.target.closest("button[data-index]");
+      if (!button) return;
+      const index = Number(button.dataset.index);
+      const userId = document.getElementById("meal-user").value.trim() || "default";
+      button.disabled = true;
+      try {
+        await apiRequest(`/api/logs/${encodeURIComponent(userId)}/${index}`, { method: "DELETE" });
+        await loadSummary(false, []);
+        showMessage("meal-message", "已删除该条记录。", "success");
+      } catch (error) {
+        showMessage("meal-message", error.message, "error");
+        button.disabled = false;
       }
     });
 
@@ -1011,13 +1078,16 @@
         renderPlan(data);
         showMessage("plan-message", "已按当前剩余目标生成餐单。", "success");
       } catch (error) {
-        showMessage("plan-message", error.message, "error");
+        const hint = /请先/.test(error.message) ? "（请先切到「身体档案与目标」保存档案）" : "";
+        showMessage("plan-message", error.message + hint, "error");
       } finally {
         setBusy(elements.planForm, false);
       }
     });
 
     checkHealth();
+    // 服务恢复后状态点会自动变绿；轮询为静默模式，不覆盖用户正在看的提示
+    setInterval(() => checkHealth(true), 30000);
   </script>
 </body>
 </html>

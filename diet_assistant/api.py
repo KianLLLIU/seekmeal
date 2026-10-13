@@ -16,9 +16,9 @@ from datetime import date
 from pathlib import Path
 from typing import Any
 
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Query, Request
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, JSONResponse
 from pydantic import BaseModel, Field
 
 from .analyzer import DayLog, Totals
@@ -56,6 +56,16 @@ app.add_middleware(
     allow_headers=["Content-Type"],
 )
 
+@app.exception_handler(ValueError)
+async def _value_error_handler(request: Request, exc: ValueError) -> JSONResponse:
+    """公式层的 ValueError 是入参问题，应返回 400 而不是 500。
+
+    例如体脂率越界。没有这层兜底，异常会以 500 抛出，前端只能显示
+    「请求失败」，用户也不知道是自己填错了。
+    """
+    return JSONResponse(status_code=400, content={"detail": str(exc)})
+
+
 WEB_INDEX = Path(__file__).resolve().parents[1] / "web" / "index.html"
 
 db = FoodDB.load()
@@ -64,11 +74,24 @@ book = RecipeBook.load(db)
 #: MVP 阶段用内存态保存，生产环境替换为数据库
 _state: dict[str, Any] = {"logs": {}, "weights": {}, "profiles": {}}
 
+#: 内存态容量上限：公网长期运行时，防止不同 user_id 无限累积把进程撑爆
+MAX_USER_SLOTS = 2000
+
+
+def _prune(bucket: str) -> None:
+    """超出容量后按插入顺序丢弃最早的条目（简易 FIFO）。"""
+    store = _state[bucket]
+    overflow = len(store) - MAX_USER_SLOTS
+    if overflow > 0:
+        for key in list(store)[:overflow]:
+            store.pop(key, None)
+
 
 def _log_for(user_id: str) -> DayLog:
     key = f"{user_id}:{date.today().isoformat()}"
     if key not in _state["logs"]:
         _state["logs"][key] = DayLog()
+        _prune("logs")
     return _state["logs"][key]
 
 
@@ -91,42 +114,46 @@ def _targets_of(profile: dict) -> MacroTarget:
 # ---------------------------------------------------------------------------
 
 
+# 所有入参都做范围约束：公网服务不能假设调用方是友善的。
+# user_id 限制长度是必要的——它直接作为内存字典的键。
 class ProfileIn(BaseModel):
-    user_id: str = "default"
+    user_id: str = Field("default", max_length=40)
     sex: str = Field("male", pattern="^(male|female)$")
     weight: float = Field(70.0, gt=20, lt=300)
     height: float = Field(172.0, gt=100, lt=250)
     age: int = Field(20, ge=10, le=100)
     activity: str = "moderate"
     goal: str = Field("maintain", pattern="^(lose|maintain|gain)$")
-    weekly_delta_kg: float = 0.0
-    body_fat_pct: float | None = None
+    weekly_delta_kg: float = Field(0.0, ge=-1.5, le=1.5,
+                                   description="每周体重变化幅度，方向由 goal 决定")
+    body_fat_pct: float | None = Field(None, ge=3, le=60,
+                                       description="体脂率百分比，3–60")
 
 
 class ParseIn(BaseModel):
-    text: str
-    user_id: str = "default"
-    meal: str = "午餐"
+    text: str = Field(..., max_length=500)
+    user_id: str = Field("default", max_length=40)
+    meal: str = Field("午餐", max_length=10)
 
 
 class RecommendIn(BaseModel):
-    user_id: str = "default"
-    query: str = ""
-    preferences: list[str] = []
-    avoid: list[str] = []
-    top_k: int = 5
+    user_id: str = Field("default", max_length=40)
+    query: str = Field("", max_length=100)
+    preferences: list[str] = Field(default_factory=list, max_length=20)
+    avoid: list[str] = Field(default_factory=list, max_length=20)
+    top_k: int = Field(5, ge=1, le=50)
 
 
 class PlanIn(BaseModel):
-    user_id: str = "default"
-    preferences: list[str] = []
-    avoid: list[str] = []
+    user_id: str = Field("default", max_length=40)
+    preferences: list[str] = Field(default_factory=list, max_length=20)
+    avoid: list[str] = Field(default_factory=list, max_length=20)
 
 
 class WeightIn(BaseModel):
-    user_id: str = "default"
-    weight: float
-    day: str | None = None
+    user_id: str = Field("default", max_length=40)
+    weight: float = Field(..., gt=20, lt=300)
+    day: str | None = Field(None, max_length=10)
 
 
 # ---------------------------------------------------------------------------
@@ -185,7 +212,8 @@ def set_profile(p: ProfileIn) -> dict:
 
 
 @app.get("/api/foods/search")
-def search_foods(q: str, top_k: int = 5) -> dict:
+def search_foods(q: str = Query(..., max_length=50),
+                 top_k: int = Query(5, ge=1, le=50)) -> dict:
     hits = db.search(q, top_k=top_k)
     return {
         "query": q,
@@ -204,9 +232,12 @@ def search_foods(q: str, top_k: int = 5) -> dict:
 @app.post("/api/parse")
 def parse_text(body: ParseIn) -> dict:
     """解析一句中文食物描述，返回候选（含克重），由前端确认后再入库。"""
-    results = db.parse_many(body.text)
+    text = body.text.strip()
+    if not text:
+        raise HTTPException(400, "请输入要解析的食物，例如「一碗米饭 鸡胸肉100g」")
+    results = db.parse_many(text)
     if not results:
-        raise HTTPException(404, "未能识别食物，请换一种说法")
+        raise HTTPException(400, "未能识别食物，请换一种说法（支持内置食物名、别名、克重与常见量词）")
     return {
         "text": body.text,
         "items": [
@@ -222,10 +253,13 @@ def parse_text(body: ParseIn) -> dict:
 
 @app.post("/api/logs")
 def add_log(body: ParseIn) -> dict:
+    text = body.text.strip()
+    if not text:
+        raise HTTPException(400, "请输入要记录的食物，例如「一碗米饭 鸡胸肉100g」")
     log = _log_for(body.user_id)
-    results = db.parse_many(body.text)
+    results = db.parse_many(text)
     if not results:
-        raise HTTPException(404, "未能识别食物")
+        raise HTTPException(400, "未能识别食物，请换一种说法（支持内置食物名、别名、克重与常见量词）")
     added = []
     for r in results:
         e = log.add(r.food, r.grams, body.meal, body.text)
