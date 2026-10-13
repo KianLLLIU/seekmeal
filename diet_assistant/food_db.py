@@ -36,6 +36,11 @@ PORTION_PATTERN = re.compile(
     r"(汤匙|碗|个|份|块|根|片|杯|勺|把|串|盒|瓶|罐|包|盘|只|条|袋)"
 )
 
+#: 独立成段的纯数量片段，如 '100g'、'200 克'、'0.5kg'
+QUANTITY_TOKEN = re.compile(
+    r"[0-9０-９]+(?:\.[0-9０-９]+)?\s*(?:千克|kg|克|g|毫升|ml)?", re.IGNORECASE
+)
+
 
 def _norm(text: str) -> str:
     """归一化：全角转半角、去空格、小写。"""
@@ -319,18 +324,46 @@ class FoodDB:
         return MatchResult(food=food, grams=float(grams), score=score,
                            matched_by=how, portion_used=portion_used)
 
-    def parse_many(self, text: str) -> list[MatchResult]:
-        """解析多食物输入，支持顿号、逗号、分号、'和'、'加'、'+'、多空格与单空格分隔。
+    def _split_items(self, text: str) -> list[str]:
+        """把多食物输入切成独立片段。
 
-        单空格只在后面不是数字时才切分，避免把 '鸡胸肉 100g' 拆成两段。
+        先按标点与任意空白切分，再把「纯数量」片段（如 ``100g``、``200 克``）
+        并回相邻的食物片段，避免把 ``米饭 100g`` / ``150g 鸡胸肉`` 拆成两段后
+        丢失克重或只剩一个空数字。
         """
-        parts = re.split(r"[、,，;；+＋]|和|加上|再加|还有|\s{2,}|\s+(?![0-9０-９])", text)
-        out: list[MatchResult] = []
-        for p in parts:
-            p = p.strip()
-            if not p:
+        raw_parts = [p.strip() for p in re.split(r"[、,，;；+＋]|和|加上|再加|还有|\s+", text or "")]
+        parts = [p for p in raw_parts if p]
+        merged: list[str] = []
+        pending: str = ""
+        for part in parts:
+            if QUANTITY_TOKEN.fullmatch(part):
+                if merged:
+                    # 数量跟在食物后面：米饭 + 100g → 米饭100g
+                    merged[-1] = f"{merged[-1]}{part}"
+                else:
+                    # 数量写在食物前面：先攒着，并到下一个食物片段
+                    pending = part
                 continue
-            r = self.parse(p)
+            if pending:
+                part = f"{pending} {part}"
+                pending = ""
+            merged.append(part)
+        if pending:
+            if merged:
+                merged[-1] = f"{merged[-1]} {pending}"
+            else:
+                merged.append(pending)
+        return merged
+
+    def parse_many(self, text: str) -> list[MatchResult]:
+        """解析多食物输入，支持顿号、逗号、分号、'和'、'加'、'+' 与空白分隔。
+
+        数量片段会与相邻食物片段合并，因此 ``米饭 100g`` 与 ``150g 鸡胸肉``
+        两种写法都能得到正确克重，不会因为切分导致食物被静默丢弃。
+        """
+        out: list[MatchResult] = []
+        for part in self._split_items(text):
+            r = self.parse(part)
             if r:
                 out.append(r)
         return out
