@@ -12,6 +12,8 @@ FastAPI 接口层，供 Web 前端与微信小程序共用。
 
 from __future__ import annotations
 
+import os
+import re
 from datetime import date
 from pathlib import Path
 from typing import Any
@@ -45,12 +47,30 @@ app = FastAPI(
 )
 
 # 网页既可由本 API 的根路径提供，也可作为 file:// 本地文件直接打开。
-# 后一种方式的浏览器 Origin 为 null，因此仅放行本机页面来源。
+# 后一种方式的浏览器 Origin 为 null，因此默认仅放行「本机页面 + file://」。
+#
+# 若要把页面部署到别处（如 GitHub Pages）再连本 API，浏览器会先发跨域预检，
+# 此时需要显式声明来源。用环境变量追加，逗号分隔；不设置就保持收紧的默认值：
+#     SEEKMEAL_ALLOWED_ORIGINS="https://foo.github.io,https://bar.example"
+# 允许值里写 "*" 表示彻底放开（仅建议本地调试时使用）。
+_LOCAL_ORIGIN_RE = r"https?://(127\.0\.0\.1|localhost)(:\d+)?"
+_EXTRA_ORIGINS = [
+    item.strip().rstrip("/")
+    for item in os.environ.get("SEEKMEAL_ALLOWED_ORIGINS", "").split(",")
+    if item.strip()
+]
+_ALLOW_ANY_ORIGIN = "*" in _EXTRA_ORIGINS
+_ORIGIN_RE = (
+    _LOCAL_ORIGIN_RE
+    if not _EXTRA_ORIGINS
+    else "(" + "|".join([_LOCAL_ORIGIN_RE] + [re.escape(o) for o in _EXTRA_ORIGINS]) + ")"
+)
+
 app.add_middleware(
     CORSMiddleware,
-    # "null" 对应直接双击打开的 file:// 页面；正则覆盖本机任意端口
-    allow_origins=["null"],
-    allow_origin_regex=r"https?://(127\.0\.0\.1|localhost)(:\d+)?",
+    # "null" 对应直接双击打开的 file:// 页面；正则覆盖本机任意端口与追加的来源
+    allow_origins=["*"] if _ALLOW_ANY_ORIGIN else ["null"],
+    allow_origin_regex=None if _ALLOW_ANY_ORIGIN else _ORIGIN_RE,
     allow_credentials=False,
     allow_methods=["GET", "POST", "DELETE", "OPTIONS"],
     allow_headers=["Content-Type"],

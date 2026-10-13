@@ -73,7 +73,17 @@ python -m pip install -r requirements.txt
 4. 打开技术方案文档
 5. 退出
 
-也可双击 `start_web.bat` 直接进入网页模式。启动器按 `py -3`、`python`、项目交付环境绝对解释器的顺序寻找 Python。
+也可双击 `start_web.bat` 直接进入网页模式。
+
+启动器寻找 Python 时会**逐个实测 `import uvicorn, fastapi`**，按以下顺序取第一个真正可用的解释器：
+
+1. `项目目录\.venv\Scripts\python.exe`
+2. `项目目录\..\.venv\Scripts\python.exe`
+3. 交付自带解释器 `%USERPROFILE%\.workbuddy\binaries\python\versions\3.13.12\python.exe`
+4. `py -3`
+5. `python`
+
+只「存在」但没装依赖的解释器会被跳过，不会再出现「明明装了 Python 却提示缺 uvicorn」的情况。若以上全都不满足，脚本会打印确切的安装命令后退出。
 
 ### 3. 命令行模式
 
@@ -102,6 +112,36 @@ python -m uvicorn diet_assistant.api:app --host 127.0.0.1 --port 8000
 页面也可以直接双击 `web/index.html` 打开（此时请求回退到 `http://127.0.0.1:8000`），但本地 API 仍需运行。网页会显示服务连接状态，并在服务未启动时给出中文提示。
 
 部署到公网时同理：只要页面与 API 由同一域名托管，前端无需改动任何地址配置。
+
+#### 把页面接到别的 API（跨域）
+
+如果网页和 API **不在同一个域名**（例如页面放 GitHub Pages、API 在别处），需要两步：
+
+**前端**：页面底部「页面请求地址」旁的「设置 API 地址」可以指定任意 API 基址，保存在本机浏览器。也可用查询参数临时指定：
+
+```text
+https://你的页面地址/index.html?api=https://你的API域名
+```
+
+留空即回到同源默认值。不写协议时会自动补全：`127.0.0.1:8000` → `http://`，其他 → `https://`。
+
+**后端**：浏览器的跨域请求需要 API 放行来源。默认只允许本机与 `file://`，要放开需显式声明：
+
+```bash
+# Windows PowerShell
+$env:SEEKMEAL_ALLOWED_ORIGINS="https://your-name.github.io"
+python -m uvicorn diet_assistant.api:app --host 0.0.0.0 --port 8000
+```
+
+```bash
+# macOS / Linux
+SEEKMEAL_ALLOWED_ORIGINS="https://your-name.github.io" \
+  python -m uvicorn diet_assistant.api:app --host 0.0.0.0 --port 8000
+```
+
+- 多个来源用逗号分隔；末尾斜杠会自动去掉；只做整串精确匹配。
+- 值写 `*` 表示放行全部来源，**只建议本地调试用**。
+- 公共部署建议直接让 API 托管页面（即上面的默认方式），避免跨域与来源维护。
 
 使用顺序：
 

@@ -420,6 +420,42 @@
     .api-note { margin: 12px 0 0; color: var(--muted); font-size: 11px; }
     .api-note code { border-radius: 5px; background: #e9efed; padding: 2px 5px; color: #334b42; }
 
+    .link-button {
+      border: 0;
+      background: none;
+      padding: 0;
+      color: var(--primary);
+      font: inherit;
+      font-size: 11px;
+      text-decoration: underline;
+      cursor: pointer;
+    }
+    .api-config { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 10px 0 0; }
+    .api-config[hidden] { display: none; }
+    .api-config input {
+      flex: 1 1 280px;
+      min-width: 220px;
+      border: 1px solid var(--line);
+      border-radius: 9px;
+      background: var(--surface);
+      padding: 8px 10px;
+      color: var(--text);
+      font: inherit;
+      font-size: 12px;
+    }
+    .api-config .mini-button {
+      border: 1px solid var(--line);
+      border-radius: 9px;
+      background: var(--surface);
+      padding: 8px 12px;
+      color: var(--text);
+      font: inherit;
+      font-size: 12px;
+      cursor: pointer;
+    }
+    .api-config .mini-button.primary { border-color: var(--primary); background: var(--primary-soft); color: var(--primary-dark); }
+    .api-config .hint { flex: 1 1 100%; margin: 0; }
+
     .disclaimer {
       position: fixed;
       left: 0;
@@ -689,7 +725,17 @@
       </div>
     </section>
 
-    <p class="api-note">页面请求地址：<code id="api-base-text">http://127.0.0.1:8000</code>。以 <code>file://</code> 打开时连接本机服务；由服务端托管时自动使用同源地址。</p>
+    <p class="api-note">页面请求地址：<code id="api-base-text">http://127.0.0.1:8000</code>。以 <code>file://</code> 打开时连接本机服务；由服务端托管时自动使用同源地址。
+      <button type="button" id="api-config-toggle" class="link-button" aria-expanded="false" aria-controls="api-config">设置 API 地址</button>
+    </p>
+
+    <div class="api-config" id="api-config" hidden>
+      <input id="api-config-input" type="text" inputmode="url" spellcheck="false"
+             placeholder="https://seekmeal.app.workbuddy.host" aria-label="API 地址">
+      <button type="button" id="api-config-save" class="mini-button primary">保存并重连</button>
+      <button type="button" id="api-config-reset" class="mini-button">恢复默认</button>
+      <p class="hint">留空表示使用同源地址。地址只保存在本机浏览器，不会上传。也可用 <code>?api=</code> 参数临时指定。</p>
+    </div>
   </main>
 
   <footer class="disclaimer">本工具仅用于饮食记录与营养参考，不构成医疗建议</footer>
@@ -697,14 +743,86 @@
   <script>
     "use strict";
 
-    // 同源自适应：页面由 API 自身托管（http/https）时用相对路径，请求打到同一域名；
-    // 仅当以 file:// 双击打开时，才回退到本机固定端口。
-    const API_BASE = location.protocol === "file:" ? "http://127.0.0.1:8000" : "";
+    // 请求地址优先级：?api= 参数 > 本机保存的设置 > 同源。
+    // 页面由 API 自身托管（http/https）时用相对路径，请求打到同一域名；
+    // 以 file:// 双击打开时回退到本机固定端口；也支持手动指定远端 API。
+    const API_STORAGE_KEY = "seekmeal.api";
+
+    function normalizeApi(value) {
+      let text = String(value || "").trim().replace(/\/+$/, "");
+      if (!text) return "";
+      if (/^https?:\/\//i.test(text)) return text;
+      // 没写协议时：本机形式补 http，其余补 https。
+      if (/^(localhost|127\.0\.0\.1|\d{1,3}(\.\d{1,3}){3})(:\d+)?$/i.test(text)) return `http://${text}`;
+      return `https://${text}`;
+    }
+
+    function storedApi() {
+      try {
+        return normalizeApi(localStorage.getItem(API_STORAGE_KEY));
+      } catch (error) {
+        return "";
+      }
+    }
+
+    function resolveApiBase() {
+      const fromQuery = normalizeApi(new URLSearchParams(location.search).get("api"));
+      if (fromQuery) return fromQuery;
+      const saved = storedApi();
+      if (saved) return saved;
+      return location.protocol === "file:" ? "http://127.0.0.1:8000" : "";
+    }
+
+    const API_BASE = resolveApiBase();
     const API_ORIGIN = API_BASE || location.origin;
     const numberFormat = new Intl.NumberFormat("zh-CN", { maximumFractionDigits: 1 });
 
     document.getElementById("api-address").textContent = `· ${API_ORIGIN.replace(/^https?:\/\//, "")}`;
     document.getElementById("api-base-text").textContent = API_ORIGIN;
+
+    // 「设置 API 地址」面板：保存后整页重连，避免中途改基址导致状态错乱。
+    (function initApiConfig() {
+      const toggle = document.getElementById("api-config-toggle");
+      const panel = document.getElementById("api-config");
+      const input = document.getElementById("api-config-input");
+      const saveButton = document.getElementById("api-config-save");
+      const resetButton = document.getElementById("api-config-reset");
+      if (!toggle || !panel || !input || !saveButton || !resetButton) return;
+
+      input.value = storedApi();
+
+      toggle.addEventListener("click", () => {
+        const willOpen = panel.hidden;
+        panel.hidden = !willOpen;
+        toggle.setAttribute("aria-expanded", String(willOpen));
+        if (willOpen) input.focus();
+      });
+
+      saveButton.addEventListener("click", () => {
+        const value = normalizeApi(input.value);
+        try {
+          if (value) localStorage.setItem(API_STORAGE_KEY, value);
+          else localStorage.removeItem(API_STORAGE_KEY);
+        } catch (error) {
+          // 隐私模式下 localStorage 不可写：至少让本次会话生效
+          const url = new URL(location.href);
+          if (value) url.searchParams.set("api", value);
+          else url.searchParams.delete("api");
+          location.replace(url.toString());
+          return;
+        }
+        location.reload();
+      });
+
+      resetButton.addEventListener("click", () => {
+        try {
+          localStorage.removeItem(API_STORAGE_KEY);
+        } catch (error) {
+          /* 忽略：无法写入时直接刷新即可回到默认 */
+        }
+        location.reload();
+      });
+    })();
 
     const elements = {
       serviceChip: document.getElementById("service-chip"),
