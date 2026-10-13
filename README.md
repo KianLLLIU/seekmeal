@@ -28,6 +28,10 @@ SeekMeal/
 ├── .gitignore
 ├── start.bat                 # Windows 菜单启动器
 ├── start_web.bat             # 网页模式快捷启动器
+├── env.bat                   # 在当前终端激活专用 Python 环境
+├── tools/
+│   ├── setup_env.bat         # 一键配置环境（双击即可）
+│   └── setup_env.py          # 环境引擎：创建 / 修复 / 自检
 ├── diet_assistant/
 │   ├── __init__.py
 │   ├── formulas.py           # 代谢与营养公式
@@ -49,7 +53,13 @@ SeekMeal/
 
 ### 1. 环境准备
 
-需要 Python 3.10 或更高版本。
+需要 Python 3.10 或更高版本。营养计算、食物库、推荐、排餐和命令行**仅用标准库**，不装任何东西也能跑；只有 API 与网页模式需要 `requirements.txt` 里的依赖。
+
+**方式 A：双击配置（推荐）**
+
+双击 `tools\setup_env.bat`。脚本会自动找一个可用的 Python、建好专用环境、装齐依赖并自检。
+
+**方式 B：手动**
 
 ```bash
 python -m venv .venv
@@ -61,7 +71,40 @@ source .venv/bin/activate
 python -m pip install -r requirements.txt
 ```
 
-营养计算、食物库、推荐、排餐和命令行仅使用 Python 标准库；只有 API 与网页模式需要安装 `requirements.txt` 中的依赖。
+**专用环境的位置**
+
+本机已配好的专用环境位于：
+
+```text
+%USERPROFILE%\.workbuddy\binaries\python\envs\seekmeal
+```
+
+选这个位置有两个原因：一是它正好是启动器探测列表中的第 3 顺位，项目目录和桌面副本能共用同一份环境，装一次两边都能用；二是环境不落在仓库里，不会给 git 塞进一个几百 MB 的 `.venv`。
+
+**在终端里用它**
+
+想在命令行直接用 `uvicorn`、`pytest` 等命令，先在项目目录激活：
+
+```bat
+call env.bat
+```
+
+双击 `env.bat` 也会新开一个已激活的终端。环境引擎支持三种用法：
+
+```bat
+python tools\setup_env.py            :: 创建或修复（已就绪则秒退）
+python tools\setup_env.py --check    :: 只体检，不做改动
+python tools\setup_env.py --force    :: 删掉重装
+```
+
+网络不通时可指定镜像：
+
+```bat
+set SEEKMEAL_PIP_INDEX=https://pypi.tuna.tsinghua.edu.cn/simple
+python tools\setup_env.py
+```
+
+若要换到别的目录，设 `SEEKMEAL_ENV_DIR` 即可覆盖默认位置。
 
 ### 2. Windows 一键启动
 
@@ -75,15 +118,18 @@ python -m pip install -r requirements.txt
 
 也可双击 `start_web.bat` 直接进入网页模式。
 
-启动器寻找 Python 时会**逐个实测 `import uvicorn, fastapi`**，按以下顺序取第一个真正可用的解释器：
+启动器会**逐个实测能否 `import uvicorn, fastapi`**，按以下顺序取第一个真正可用的解释器：
 
 1. `项目目录\.venv\Scripts\python.exe`
 2. `项目目录\..\.venv\Scripts\python.exe`
-3. 交付自带解释器 `%USERPROFILE%\.workbuddy\binaries\python\versions\3.13.12\python.exe`
-4. `py -3`
-5. `python`
+3. `%USERPROFILE%\.workbuddy\binaries\python\envs\seekmeal\Scripts\python.exe`（本机已配好的专用环境）
+4. `项目交付自带的解释器 %USERPROFILE%\.workbuddy\binaries\python\versions\3.13.12\python.exe`
+5. `py -3`
+6. `python`
 
 只「存在」但没装依赖的解释器会被跳过，不会再出现「明明装了 Python 却提示缺 uvicorn」的情况。若以上全都不满足，脚本会打印确切的安装命令后退出。
+
+回显、命令行和单测走的是另一条更宽松的探测分支（只要求解释器能跑），因此即使一个依赖都没装，`start.bat` 的第 1、3 项依然可用。
 
 ### 3. 命令行模式
 
