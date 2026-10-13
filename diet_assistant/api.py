@@ -48,7 +48,9 @@ app = FastAPI(
 # 后一种方式的浏览器 Origin 为 null，因此仅放行本机页面来源。
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["null", "http://127.0.0.1:8000", "http://localhost:8000"],
+    # "null" 对应直接双击打开的 file:// 页面；正则覆盖本机任意端口
+    allow_origins=["null"],
+    allow_origin_regex=r"https?://(127\.0\.0\.1|localhost)(:\d+)?",
     allow_credentials=False,
     allow_methods=["GET", "POST", "DELETE", "OPTIONS"],
     allow_headers=["Content-Type"],

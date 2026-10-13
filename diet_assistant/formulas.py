@@ -239,9 +239,19 @@ def compute_energy_budget(
     """计算完整能量预算。
 
     Args:
-        weekly_delta_kg: 期望每周体重变化，正数增重、负数减重。
-            减脂建议 -0.5 ~ -0.7 kg/周，一般不超过体重的 1%。
+        weekly_delta_kg: 期望每周体重变化的幅度（填正数即可，方向由 goal 决定）。
+            goal=lose 按减重处理，goal=gain 按增重处理，goal=maintain 归零。
+            若仍按旧约定传入负数，方向与 goal 一致时结果不变。
+            减脂建议 0.5 ~ 0.7 kg/周，一般不超过体重的 1%。
     """
+    # 方向以 goal 为准：界面上通常只填正数幅度，靠 goal 决定增/减
+    if goal == "lose":
+        weekly_delta_kg = -abs(weekly_delta_kg)
+    elif goal == "gain":
+        weekly_delta_kg = abs(weekly_delta_kg)
+    else:  # maintain
+        weekly_delta_kg = 0.0
+
     bmr_value, formula = bmr(sex, weight_kg, height_cm, age, body_fat_pct)
     tdee_value = tdee(bmr_value, activity)
 

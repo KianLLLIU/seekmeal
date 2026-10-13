@@ -258,6 +258,10 @@ class FoodDB:
         raw = (text or "").strip()
         if not raw:
             return None
+        # 名称与数量之间的空格不影响语义：'鸡胸肉 100g' → '鸡胸肉100g'
+        raw = re.sub(r"(?<=\D)\s+(?=[\d０-９])", "", raw)
+        raw = re.sub(r"(?<=[\d０-９])\s+(?=g|G|克|kg|KG|千克|ml|ML|毫升)", "", raw)
+        raw = raw.strip()
 
         grams: float | None = None
         portion_used = ""
@@ -316,8 +320,11 @@ class FoodDB:
                            matched_by=how, portion_used=portion_used)
 
     def parse_many(self, text: str) -> list[MatchResult]:
-        """解析多食物输入，支持顿号、逗号、'和'、'加'、'+' 分隔。"""
-        parts = re.split(r"[、,，+＋]|和|加上|再加|还有|\s{2,}", text)
+        """解析多食物输入，支持顿号、逗号、分号、'和'、'加'、'+'、多空格与单空格分隔。
+
+        单空格只在后面不是数字时才切分，避免把 '鸡胸肉 100g' 拆成两段。
+        """
+        parts = re.split(r"[、,，;；+＋]|和|加上|再加|还有|\s{2,}|\s+(?![0-9０-９])", text)
         out: list[MatchResult] = []
         for p in parts:
             p = p.strip()
