@@ -1,0 +1,16 @@
+# Windows batch files MUST use CRLF: cmd.exe parses them by byte offset,
+# LF-only endings break goto/call and can execute rem lines as commands.
+*.bat text eol=crlf
+*.cmd text eol=crlf
+
+# Everything else stays LF in the repository.
+*.py   text eol=lf
+*.md   text eol=lf
+*.rst  text eol=lf
+*.txt  text eol=lf
+*.json text eol=lf
+*.html text eol=lf
+*.css  text eol=lf
+*.js   text eol=lf
+*.yml  text eol=lf
+*.yaml text eol=lf

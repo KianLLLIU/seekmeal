@@ -1,15 +1,13 @@
 @echo off
 chcp 65001 >nul
 setlocal EnableExtensions
-rem Move to the project root (this file lives in tools\)
+rem Go to the project root (this file lives in the tools folder).
 cd /d "%~dp0.."
 set "PROJECT=%CD%"
 
-rem --------------------------------------------------------------------
-rem Find ANY working Python 3 just to run the setup engine.
-rem The engine itself (tools\setup_env.py) picks the proper base
-rem interpreter, creates the venv and installs the dependencies.
-rem --------------------------------------------------------------------
+rem Find any working Python 3 just to launch the setup engine.
+rem The engine tools\setup_env.py then picks a proper base interpreter,
+rem creates the venv and installs the dependencies.
 set "BOOT_EXE="
 set "BOOT_ARGS="
 
@@ -24,11 +22,8 @@ if not defined BOOT_EXE goto no_python
 set "RC=%ERRORLEVEL%"
 
 echo.
-if "%RC%"=="0" (
-  %BOOT_EXE% %BOOT_ARGS% -c "print('  [OK] Setup finished. You can close this window and run start.bat.')"
-) else (
-  %BOOT_EXE% %BOOT_ARGS% -c "print('  [FAIL] Setup did not complete. See the messages above.')"
-)
+if "%RC%"=="0" echo   [OK] Finished successfully.
+if not "%RC%"=="0" echo   [FAIL] Something went wrong. Please read the messages above.
 echo.
 pause
 endlocal & exit /b %RC%
@@ -45,9 +40,9 @@ echo.
 echo   [x] No Python 3 interpreter was found on this computer.
 echo       Install Python 3.10 or later first:
 echo           https://www.python.org/downloads/
-echo       Remember to tick "Add python.exe to PATH" during setup.
+echo       During setup, tick "Add python.exe to PATH".
 echo.
-echo   [x] 未找到任何 Python 3 解释器，请先安装 Python 3.10 或更高版本。
+echo   [x] See README.md section 1 for the step-by-step guide.
 echo       https://www.python.org/downloads/
 echo.
 pause

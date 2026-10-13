@@ -9,16 +9,16 @@ set "VPY=%SEEKMEAL_VENV%\Scripts\python.exe"
 
 if not exist "%VPY%" (
   echo.
-  echo   [x] SeekMeal dedicated Python environment not found:
+  echo   [x] SeekMeal dedicated Python environment was not found:
   echo       %SEEKMEAL_VENV%
   echo.
-  echo       Run once to install it:  tools\setup_env.bat
+  echo       Install it once by running:  tools\setup_env.bat
   echo.
   pause
   endlocal & exit /b 1
 )
 
-rem ---- Double-clicked? Then relaunch inside a fresh console so it stays open ----
+rem Double-clicked? Relaunch inside a fresh console so the window stays open.
 if /i "%~1"=="activate" goto activate
 echo "%cmdcmdline%" | find /i "%~nx0" >nul
 if not errorlevel 1 (
