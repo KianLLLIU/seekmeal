@@ -1,0 +1,451 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>智能饮食健康助手 · 技术方案 v1</title>
+<style>
+:root{
+  --bg:#f7f8f6; --card:#ffffff; --ink:#1f2328; --ink2:#4a5259; --ink3:#79838c;
+  --line:#e3e6e3; --blue:#185fa5; --blue-bg:#e6f1fb; --teal:#0f6e56; --teal-bg:#e1f5ee;
+  --amber-bg:#faeeda; --amber:#854f0b; --red-bg:#fcebeb; --red:#a32d2d;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);
+  font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif;
+  font-size:15px;line-height:1.7;-webkit-font-smoothing:antialiased}
+.wrap{max-width:960px;margin:0 auto;padding:48px 28px 80px}
+header{margin-bottom:40px;padding-bottom:28px;border-bottom:1px solid var(--line)}
+h1{font-size:26px;font-weight:600;margin:0 0 10px;letter-spacing:-0.01em}
+.sub{color:var(--ink2);font-size:14px;margin:0}
+.meta{margin-top:16px;display:flex;flex-wrap:wrap;gap:8px}
+.tag{font-size:12px;padding:4px 10px;border-radius:999px;background:var(--blue-bg);color:var(--blue)}
+.tag.t2{background:var(--teal-bg);color:var(--teal)}
+nav{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:16px 20px;margin-bottom:40px}
+nav strong{font-size:13px;color:var(--ink3);font-weight:500;display:block;margin-bottom:8px}
+nav a{display:inline-block;margin:4px 18px 4px 0;font-size:13px;color:var(--blue);text-decoration:none}
+nav a:hover{text-decoration:underline}
+section{margin-bottom:48px}
+h2{font-size:19px;font-weight:600;margin:0 0 6px;display:flex;align-items:center;gap:10px}
+h2 .n{width:26px;height:26px;border-radius:7px;background:var(--teal-bg);color:var(--teal);
+  font-size:13px;font-weight:600;display:flex;align-items:center;justify-content:center;flex:none}
+h3{font-size:15px;font-weight:600;margin:28px 0 10px;color:var(--ink)}
+p{margin:0 0 14px;color:var(--ink2)}
+.card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:20px 22px;margin-bottom:16px}
+table{width:100%;border-collapse:collapse;font-size:13.5px;margin:12px 0}
+th{text-align:left;font-weight:600;color:var(--ink);background:#f2f4f2;padding:9px 12px;
+  border-bottom:1px solid var(--line);white-space:nowrap}
+td{padding:9px 12px;border-bottom:1px solid var(--line);color:var(--ink2);vertical-align:top}
+tr:last-child td{border-bottom:none}
+td code,p code,li code{background:#f2f4f2;padding:1px 6px;border-radius:4px;
+  font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:12.5px;color:var(--ink)}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px;margin:14px 0}
+.m{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:16px 18px}
+.m .t{font-weight:600;font-size:14px;margin-bottom:6px;color:var(--ink)}
+.m .d{font-size:13px;color:var(--ink2);line-height:1.6}
+.note{background:var(--amber-bg);border-left:3px solid #ba7517;border-radius:8px;padding:14px 18px;margin:16px 0;font-size:13.5px;color:#6b4308}
+.warn{background:var(--red-bg);border-left:3px solid #e24b4a;border-radius:8px;padding:14px 18px;margin:16px 0;font-size:13.5px;color:#7d2424}
+ul{margin:8px 0 14px;padding-left:20px;color:var(--ink2)}
+li{margin-bottom:6px}
+.repo{border:1px solid var(--line);border-radius:10px;padding:14px 16px;margin-bottom:10px;background:var(--card)}
+.repo .h{display:flex;justify-content:space-between;align-items:baseline;gap:12px;flex-wrap:wrap}
+.repo .nm{font-weight:600;font-size:14px;color:var(--ink);font-family:ui-monospace,Menlo,Consolas,monospace}
+.repo .why{font-size:13px;color:var(--ink2);margin-top:6px}
+.repo .lg{font-size:12px;color:var(--ink3);white-space:nowrap}
+a{color:var(--blue)}
+.flow{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:24px 18px;margin:16px 0}
+.flow svg{width:100%;height:auto;display:block}
+footer{border-top:1px solid var(--line);padding-top:20px;font-size:12.5px;color:var(--ink3)}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header>
+  <h1>智能饮食健康助手 · 技术方案 v1</h1>
+  <p class="sub">功能模块划分 · 公式与算法底座 · 数据源 · 技术选型 · 开源参考 · 开发路线</p>
+  <div class="meta">
+    <span class="tag">8 个功能模块</span>
+    <span class="tag t2">Python + TypeScript</span>
+    <span class="tag">2026-10-13</span>
+  </div>
+</header>
+
+<nav>
+  <strong>目录</strong>
+  <a href="#m1">1 功能模块</a>
+  <a href="#m2">2 公式体系</a>
+  <a href="#m3">3 数据源</a>
+  <a href="#m4">4 算法</a>
+  <a href="#m5">5 流程图</a>
+  <a href="#m6">6 语言与选型</a>
+  <a href="#m7">7 开源参考</a>
+  <a href="#m8">8 开发路线</a>
+  <a href="#m9">9 风险与合规</a>
+  <a href="#m10">10 微信小程序改造</a>
+</nav>
+
+<section id="m1">
+<h2><span class="n">1</span>功能模块划分</h2>
+<p>建议 8 个模块，分 4 层。优先级从上到下递减，<strong>前 3 个是 MVP 必做</strong>，第 8 个可以最后补。</p>
+
+<table>
+<tr><th style="width:38px">#</th><th style="width:150px">模块</th><th>职责</th><th style="width:150px">关键难点</th></tr>
+<tr><td>1</td><td><strong>用户画像与代谢引擎</strong></td><td>身高/体重/年龄/性别/活动量/目标 → 输出每日热量目标与三大营养素区间，管理过敏原与慢病禁忌</td><td>公式选型与参数校验，异常输入拦截</td></tr>
+<tr><td>2</td><td><strong>多模态饮食记录</strong></td><td>文本描述、语音、拍照、条码扫描四种入口，统一归一为「食物 + 克重」</td><td>中文食物名歧义；估重误差</td></tr>
+<tr><td>3</td><td><strong>食物成分与营养核算</strong></td><td>查成分表 → 按克重换算 → 汇总热量、宏量、微量营养素</td><td>本地化数据；生熟重换算</td></tr>
+<tr><td>4</td><td><strong>菜谱与食物推荐</strong></td><td>基于口味偏好、营养缺口、已有食材做候选排序</td><td>冷启动（新用户无行为数据）</td></tr>
+<tr><td>5</td><td><strong>膳食计划与排餐</strong></td><td>生成一日/一周三餐组合，输出采购清单</td><td>多约束同时满足，易无解</td></tr>
+<tr><td>6</td><td><strong>健康评估与风险预警</strong></td><td>GI/GL、钠、饱和脂肪、糖的超标检测；慢病禁忌冲突拦截</td><td>规则要可解释、要能关闭</td></tr>
+<tr><td>7</td><td><strong>可视化与反馈闭环</strong></td><td>体重趋势（需平滑）、达成率、周报、进度预测</td><td>体重日波动 ±1kg，必须滤波</td></tr>
+<tr><td>8</td><td><strong>营养知识问答 Agent</strong></td><td>LLM + RAG，引用权威指南回答营养问题</td><td>幻觉控制；必须带出处</td></tr>
+</table>
+
+<div class="note"><strong>建议：</strong>把模块 1、3 做成纯确定性代码（无 LLM 参与），模块 2、4、8 才用模型。数值算错了用户会立刻失去信任，而且这类错误很难被发现。</div>
+</section>
+
+<section id="m2">
+<h2><span class="n">2</span>公式体系</h2>
+<p>这是系统的「物理定律」，必须硬编码 + 单元测试，绝不能让大模型口算。</p>
+
+<h3>2.1 基础体格指标</h3>
+<table>
+<tr><th style="width:120px">指标</th><th>公式</th><th style="width:220px">说明</th></tr>
+<tr><td>BMI</td><td><code>BMI = 体重kg ÷ 身高m²</code></td><td>WHO 分级；中国标准偏瘦&lt;18.5、正常 18.5–23.9、超重 24–27.9、肥胖 ≥28</td></tr>
+<tr><td>标准体重</td><td><code>(身高cm − 80) × 0.7</code>（简易）</td><td>仅作参考，不用于目标设定</td></tr>
+<tr><td>腰臀比 WHR</td><td><code>腰围 ÷ 臀围</code></td><td>男 &gt;0.90 / 女 &gt;0.85 提示中心性肥胖</td></tr>
+<tr><td>去脂体重</td><td><code>体重 × (1 − 体脂率)</code></td><td>有体脂率时，BMR 用 Katch-McArdle 更准</td></tr>
+</table>
+
+<h3>2.2 能量代谢（核心）</h3>
+<table>
+<tr><th style="width:150px">指标</th><th>公式</th><th style="width:200px">说明</th></tr>
+<tr><td>BMR（首选）</td><td>Mifflin-St Jeor：<br>男 <code>10W + 6.25H − 5A + 5</code><br>女 <code>10W + 6.25H − 5A − 161</code></td><td>W=kg, H=cm, A=岁。当前主流，比 Harris-Benedict 误差小</td></tr>
+<tr><td>BMR（备选）</td><td>Harris-Benedict（1919 原始 / 1984 修订）</td><td>老项目常用，与旧文献对齐时用</td></tr>
+<tr><td>BMR（有体脂）</td><td>Katch-McArdle：<code>370 + 21.6 × 去脂体重kg</code></td><td>健身/低体脂人群更准</td></tr>
+<tr><td>TDEE</td><td><code>BMR × 活动系数</code></td><td>久坐 1.2 / 轻度 1.375 / 中度 1.55 / 高度 1.725 / 极高 1.9</td></tr>
+<tr><td>活动消耗</td><td><code>MET × 体重kg × 时长h</code></td><td>MET 值查 2024 Compendium of Physical Activities</td></tr>
+<tr><td>目标热量</td><td><code>TDEE − 缺口</code>，减脂建议 −300～−500 kcal/日</td><td>硬性下限：男 ≥1500、女 ≥1200 kcal</td></tr>
+<tr><td>热量↔体重</td><td><code>1 kg 体脂 ≈ 7700 kcal</code></td><td>用于进度预测：周减重 ≈ 缺口×7 ÷ 7700</td></tr>
+</table>
+
+<h3>2.3 营养素核算</h3>
+<table>
+<tr><th style="width:150px">指标</th><th>公式</th><th style="width:200px">说明</th></tr>
+<tr><td>Atwater 系数</td><td>蛋白 4 · 碳水 4 · 脂肪 9 · 酒精 7 kcal/g</td><td>核算与反算的通用换算基准</td></tr>
+<tr><td>蛋白质目标</td><td><code>1.2 ~ 2.0 g/kg 体重</code>（减脂期偏高）</td><td>先定蛋白质，再定脂肪</td></tr>
+<tr><td>脂肪目标</td><td><code>0.8 ~ 1.0 g/kg 体重</code>，且 ≥ 总热量 20%</td><td>低于 20% 会影响激素与脂溶性维生素吸收</td></tr>
+<tr><td>碳水目标</td><td><code>(总热量 − 蛋白热量 − 脂肪热量) ÷ 4</code></td><td>吃剩余热量</td></tr>
+<tr><td>膳食纤维</td><td><code>14 g / 1000 kcal</code>（中国 DRIs 约 25–30 g/日）</td><td>单独设下限约束</td></tr>
+<tr><td>血糖负荷 GL</td><td><code>GL = GI × 碳水g ÷ 100</code></td><td>GL ≥20 高、11–19 中、≤10 低。比单看 GI 实用得多</td></tr>
+<tr><td>供能比</td><td>各宏量供能 ÷ 总热量</td><td>中国居民膳食指南：碳水 50–65%、脂肪 20–30%、蛋白 10–20%</td></tr>
+<tr><td>钠 / 钾</td><td>钠 &lt;2000 mg（≈5 g 盐）、钾 ≥2000 mg</td><td>高血压人群的核心约束</td></tr>
+</table>
+
+<h3>2.4 体重趋势处理（易被忽略但很关键）</h3>
+<p>体重日波动可达 ±1 kg（水分、食物残留、衣着），直接连线会让用户误判。推荐：</p>
+<ul>
+<li><strong>指数移动平均（EMA）</strong>：<code>trendₜ = α·wₜ + (1−α)·trendₜ₋₁</code>，α 取 0.1～0.2</li>
+<li><strong>卡尔曼滤波</strong>：把真实体重当隐状态、日波动当观测噪声，效果更好且能给出置信区间</li>
+<li><strong>代谢适应修正</strong>：实际周减重持续低于预测 50% 时，下调 TDEE 估计 5–10%（MacroFactor 的做法）</li>
+</ul>
+</section>
+
+<section id="m3">
+<h2><span class="n">3</span>数据源</h2>
+<div class="grid">
+  <div class="m"><div class="t">中国食物成分表（第 6 版）</div><div class="d">国内必备。开源整理版见 <code>Sanotsu/china-food-composition-data</code>，已转 JSON / SQLite，另附常见食物 GI 数据。</div></div>
+  <div class="m"><div class="t">Open Food Facts</div><div class="d">CC0，含条码，覆盖包装食品，有公开 REST API，适合扫码功能。</div></div>
+  <div class="m"><div class="t">USDA FoodData Central</div><div class="d">CC0，字段最规范，适合做成分表 schema 参考。</div></div>
+  <div class="m"><div class="t">Food.com Recipes &amp; Interactions</div><div class="d">23 万菜谱 + 100 万条用户评分交互（Kaggle），推荐系统的标准 benchmark。</div></div>
+  <div class="m"><div class="t">MealRec</div><div class="d">1500+ 用户、7200+ 菜谱、3800+ 三餐组合，专做「一餐组合」推荐。</div></div>
+  <div class="m"><div class="t">Nutrition5k</div><div class="d">Google 发布，5000 道菜的多角度 RGB-D 图像 + 精确营养成分标注，图像估卡的标准数据集。</div></div>
+  <div class="m"><div class="t">HowToCook</div><div class="d">中文菜谱语料（<code>Anduin2017/HowToCook</code>），做中文菜谱库冷启动最省事。</div></div>
+  <div class="m"><div class="t">中国居民膳食营养素参考摄入量（DRIs）</div><div class="d">微量元素上下限的权威依据，别用美国 RDA 直接套。</div></div>
+</div>
+<div class="warn"><strong>版权提醒：</strong>《中国食物成分表》纸质版/电子版有版权，商用需授权；开源整理版属于社区二次加工，仅建议用于学习与非商业项目。USDA 与 Open Food Facts 是 CC0，可放心商用。</div>
+</section>
+
+<section id="m4">
+<h2><span class="n">4</span>算法选型</h2>
+<table>
+<tr><th style="width:130px">环节</th><th style="width:230px">算法</th><th>说明</th></tr>
+<tr><td>食物名匹配</td><td>中文分词 + 同义词表 + 编辑距离 + 向量召回</td><td>不要只靠 embedding。「宫保鸡丁」和「宫爆鸡丁」这类变体靠同义词表最稳；向量召回做兜底</td></tr>
+<tr><td>推荐（冷启动）</td><td>TF-IDF + cosine 相似度（内容过滤）</td><td>新用户无行为数据，只能靠菜品自身特征（食材、口味、营养、烹饪时长）</td></tr>
+<tr><td>推荐（有数据后）</td><td>协同过滤 / SVD 矩阵分解 / 双塔</td><td>用户数过千、交互过万再上，否则不如内容过滤</td></tr>
+<tr><td>推荐（最终）</td><td>Hybrid：加权融合 + 重排序</td><td>候选集用多路召回，排序层加业务规则（忌口硬过滤、重复度惩罚）</td></tr>
+<tr><td>排餐优化</td><td>整数规划（PuLP / OR-Tools）或贪心 + 回溯</td><td>约束：热量区间、宏量区间、过敏原、忌口、7 天内菜品不重复、食材复用率</td></tr>
+<tr><td>图像估营养</td><td>多任务学习：食材多标签分类 + 质量回归 → 查成分表换算</td><td>比「端到端回归热量」可解释、可纠错。Nutrition5k 上 SOTA 约 PMAE 17% 左右</td></tr>
+<tr><td>体重趋势</td><td>EMA / 卡尔曼滤波</td><td>见 2.4</td></tr>
+<tr><td>对话与解释</td><td>LLM + RAG（向量检索 + BM25 混合，再重排）</td><td>LLM 只负责组织语言，所有数字由确定性模块给出后注入 prompt</td></tr>
+</table>
+<div class="note"><strong>图像估重的现实预期：</strong>单张 RGB 照片估卡路里，当前开源方案误差普遍在 20–30%。产品上必须让用户能手动改克重，并明确标注「估算值」，不要假装精确。</div>
+</section>
+
+<section id="m5">
+<h2><span class="n">5</span>流程图</h2>
+
+<h3>5.1 系统分层架构</h3>
+<div class="flow">
+<svg viewBox="0 0 680 372" xmlns="http://www.w3.org/2000/svg" role="img">
+<title>系统分层架构</title>
+<defs><marker id="a1" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+<path d="M2 1L8 5L2 9" fill="none" stroke="context-stroke" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></marker></defs>
+<g><rect x="40" y="30" width="180" height="56" rx="8" fill="#E6F1FB" stroke="#185FA5" stroke-width="0.5"/>
+<text x="130" y="50" text-anchor="middle" dominant-baseline="central" font-size="14" font-weight="500" fill="#0C447C">文字 / 语音记录</text>
+<text x="130" y="68" text-anchor="middle" dominant-baseline="central" font-size="12" fill="#185FA5">自然语言描述</text></g>
+<g><rect x="250" y="30" width="180" height="56" rx="8" fill="#E6F1FB" stroke="#185FA5" stroke-width="0.5"/>
+<text x="340" y="50" text-anchor="middle" dominant-baseline="central" font-size="14" font-weight="500" fill="#0C447C">菜品照片</text>
+<text x="340" y="68" text-anchor="middle" dominant-baseline="central" font-size="12" fill="#185FA5">视觉识别与估重</text></g>
+<g><rect x="460" y="30" width="180" height="56" rx="8" fill="#E6F1FB" stroke="#185FA5" stroke-width="0.5"/>
+<text x="550" y="50" text-anchor="middle" dominant-baseline="central" font-size="14" font-weight="500" fill="#0C447C">条码 / 搜索</text>
+<text x="550" y="68" text-anchor="middle" dominant-baseline="central" font-size="12" fill="#185FA5">包装食品查询</text></g>
+<path d="M130 86L130 116" fill="none" stroke="#888780" stroke-width="1.5" marker-end="url(#a1)"/>
+<path d="M340 86L340 116" fill="none" stroke="#888780" stroke-width="1.5" marker-end="url(#a1)"/>
+<path d="M550 86L550 116" fill="none" stroke="#888780" stroke-width="1.5" marker-end="url(#a1)"/>
+<g><rect x="40" y="116" width="600" height="56" rx="8" fill="#E1F5EE" stroke="#0F6E56" stroke-width="0.5"/>
+<text x="340" y="136" text-anchor="middle" dominant-baseline="central" font-size="14" font-weight="500" fill="#085041">用户画像与代谢引擎</text>
+<text x="340" y="154" text-anchor="middle" dominant-baseline="central" font-size="12" fill="#0F6E56">BMI · BMR · TDEE · 宏量目标 · 慢病禁忌</text></g>
+<path d="M340 172L340 202" fill="none" stroke="#888780" stroke-width="1.5" marker-end="url(#a1)"/>
+<g><rect x="40" y="202" width="135" height="56" rx="8" fill="#E1F5EE" stroke="#0F6E56" stroke-width="0.5"/>
+<text x="107" y="222" text-anchor="middle" dominant-baseline="central" font-size="14" font-weight="500" fill="#085041">食物识别</text>
+<text x="107" y="240" text-anchor="middle" dominant-baseline="central" font-size="12" fill="#0F6E56">图像与分量</text></g>
+<g><rect x="195" y="202" width="135" height="56" rx="8" fill="#E1F5EE" stroke="#0F6E56" stroke-width="0.5"/>
+<text x="262" y="222" text-anchor="middle" dominant-baseline="central" font-size="14" font-weight="500" fill="#085041">营养核算</text>
+<text x="262" y="240" text-anchor="middle" dominant-baseline="central" font-size="12" fill="#0F6E56">热量与微量元素</text></g>
+<g><rect x="350" y="202" width="135" height="56" rx="8" fill="#E1F5EE" stroke="#0F6E56" stroke-width="0.5"/>
+<text x="417" y="222" text-anchor="middle" dominant-baseline="central" font-size="14" font-weight="500" fill="#085041">菜谱推荐</text>
+<text x="417" y="240" text-anchor="middle" dominant-baseline="central" font-size="12" fill="#0F6E56">检索与排序</text></g>
+<g><rect x="505" y="202" width="135" height="56" rx="8" fill="#E1F5EE" stroke="#0F6E56" stroke-width="0.5"/>
+<text x="572" y="222" text-anchor="middle" dominant-baseline="central" font-size="14" font-weight="500" fill="#085041">膳食计划</text>
+<text x="572" y="240" text-anchor="middle" dominant-baseline="central" font-size="12" fill="#0F6E56">约束优化排餐</text></g>
+<path d="M340 258L340 288" fill="none" stroke="#888780" stroke-width="1.5" marker-end="url(#a1)"/>
+<g><rect x="40" y="288" width="180" height="56" rx="8" fill="#E6F1FB" stroke="#185FA5" stroke-width="0.5"/>
+<text x="130" y="308" text-anchor="middle" dominant-baseline="central" font-size="14" font-weight="500" fill="#0C447C">食物成分数据库</text>
+<text x="130" y="326" text-anchor="middle" dominant-baseline="central" font-size="12" fill="#185FA5">中国食物成分表</text></g>
+<g><rect x="250" y="288" width="180" height="56" rx="8" fill="#E6F1FB" stroke="#185FA5" stroke-width="0.5"/>
+<text x="340" y="308" text-anchor="middle" dominant-baseline="central" font-size="14" font-weight="500" fill="#0C447C">模型与算法服务</text>
+<text x="340" y="326" text-anchor="middle" dominant-baseline="central" font-size="12" fill="#185FA5">视觉 · 推荐 · LLM</text></g>
+<g><rect x="460" y="288" width="180" height="56" rx="8" fill="#E6F1FB" stroke="#185FA5" stroke-width="0.5"/>
+<text x="550" y="308" text-anchor="middle" dominant-baseline="central" font-size="14" font-weight="500" fill="#0C447C">记录与反馈</text>
+<text x="550" y="326" text-anchor="middle" dominant-baseline="central" font-size="12" fill="#185FA5">体重 · 依从性轨迹</text></g>
+</svg>
+</div>
+
+<h3>5.2 核心数据流闭环</h3>
+<div class="flow">
+<svg viewBox="0 0 680 452" xmlns="http://www.w3.org/2000/svg" role="img">
+<title>核心数据流闭环</title>
+<defs><marker id="a2" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+<path d="M2 1L8 5L2 9" fill="none" stroke="context-stroke" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></marker></defs>
+<g><rect x="180" y="30" width="320" height="56" rx="8" fill="#E6F1FB" stroke="#185FA5" stroke-width="0.5"/>
+<text x="340" y="50" text-anchor="middle" dominant-baseline="central" font-size="14" font-weight="500" fill="#0C447C">1 · 饮食采集</text>
+<text x="340" y="68" text-anchor="middle" dominant-baseline="central" font-size="12" fill="#185FA5">文本 · 拍照 · 扫码 · 手动</text></g>
+<path d="M340 86L340 116" fill="none" stroke="#888780" stroke-width="1.5" marker-end="url(#a2)"/>
+<g><rect x="180" y="116" width="320" height="56" rx="8" fill="#E6F1FB" stroke="#185FA5" stroke-width="0.5"/>
+<text x="340" y="136" text-anchor="middle" dominant-baseline="central" font-size="14" font-weight="500" fill="#0C447C">2 · 成分匹配与估量</text>
+<text x="340" y="154" text-anchor="middle" dominant-baseline="central" font-size="12" fill="#185FA5">识别食材 · 估计克重 · 查成分表</text></g>
+<path d="M340 172L340 202" fill="none" stroke="#888780" stroke-width="1.5" marker-end="url(#a2)"/>
+<g><rect x="180" y="202" width="320" height="56" rx="8" fill="#E1F5EE" stroke="#0F6E56" stroke-width="0.5"/>
+<text x="340" y="222" text-anchor="middle" dominant-baseline="central" font-size="14" font-weight="500" fill="#085041">3 · 目标核算</text>
+<text x="340" y="240" text-anchor="middle" dominant-baseline="central" font-size="12" fill="#0F6E56">BMR · TDEE · 缺口 · 宏量区间</text></g>
+<path d="M340 258L340 288" fill="none" stroke="#888780" stroke-width="1.5" marker-end="url(#a2)"/>
+<g><rect x="180" y="288" width="320" height="56" rx="8" fill="#E1F5EE" stroke="#0F6E56" stroke-width="0.5"/>
+<text x="340" y="308" text-anchor="middle" dominant-baseline="central" font-size="14" font-weight="500" fill="#085041">4 · 推荐与排餐</text>
+<text x="340" y="326" text-anchor="middle" dominant-baseline="central" font-size="12" fill="#0F6E56">检索排序 · 约束优化 · 采购清单</text></g>
+<path d="M340 344L340 374" fill="none" stroke="#888780" stroke-width="1.5" marker-end="url(#a2)"/>
+<g><rect x="180" y="374" width="320" height="56" rx="8" fill="#E1F5EE" stroke="#0F6E56" stroke-width="0.5"/>
+<text x="340" y="394" text-anchor="middle" dominant-baseline="central" font-size="14" font-weight="500" fill="#085041">5 · 评估反馈</text>
+<text x="340" y="412" text-anchor="middle" dominant-baseline="central" font-size="12" fill="#0F6E56">体重趋势 · 达成率 · 周级复盘</text></g>
+<path d="M180 402L70 402L70 230L180 230" fill="none" stroke="#B4B2A9" stroke-width="1.5" stroke-dasharray="5 4" marker-end="url(#a2)"/>
+<text x="128" y="316" text-anchor="middle" dominant-baseline="central" font-size="12" fill="#5F5E5A">周级校准</text>
+</svg>
+</div>
+
+<h3>5.3 单次「拍照记一餐」调用链</h3>
+<div class="flow">
+<svg viewBox="0 0 680 300" xmlns="http://www.w3.org/2000/svg" role="img">
+<title>拍照记一餐的调用链</title>
+<defs><marker id="a3" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+<path d="M2 1L8 5L2 9" fill="none" stroke="context-stroke" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></marker></defs>
+<g><rect x="40" y="30" width="150" height="56" rx="8" fill="#E6F1FB" stroke="#185FA5" stroke-width="0.5"/>
+<text x="115" y="50" text-anchor="middle" dominant-baseline="central" font-size="14" font-weight="500" fill="#0C447C">上传图片</text>
+<text x="115" y="68" text-anchor="middle" dominant-baseline="central" font-size="12" fill="#185FA5">客户端压缩</text></g>
+<path d="M190 58L260 58" fill="none" stroke="#888780" stroke-width="1.5" marker-end="url(#a3)"/>
+<g><rect x="260" y="30" width="150" height="56" rx="8" fill="#E6F1FB" stroke="#185FA5" stroke-width="0.5"/>
+<text x="335" y="50" text-anchor="middle" dominant-baseline="central" font-size="14" font-weight="500" fill="#0C447C">视觉模型</text>
+<text x="335" y="68" text-anchor="middle" dominant-baseline="central" font-size="12" fill="#185FA5">食材 + 克重</text></g>
+<path d="M410 58L490 58" fill="none" stroke="#888780" stroke-width="1.5" marker-end="url(#a3)"/>
+<g><rect x="490" y="30" width="150" height="56" rx="8" fill="#E6F1FB" stroke="#185FA5" stroke-width="0.5"/>
+<text x="565" y="50" text-anchor="middle" dominant-baseline="central" font-size="14" font-weight="500" fill="#0C447C">成分表查询</text>
+<text x="565" y="68" text-anchor="middle" dominant-baseline="central" font-size="12" fill="#185FA5">每 100g 折算</text></g>
+<path d="M565 86L565 116L115 116L115 146" fill="none" stroke="#888780" stroke-width="1.5" marker-end="url(#a3)"/>
+<g><rect x="40" y="146" width="150" height="56" rx="8" fill="#E1F5EE" stroke="#0F6E56" stroke-width="0.5"/>
+<text x="115" y="166" text-anchor="middle" dominant-baseline="central" font-size="14" font-weight="500" fill="#085041">营养汇总</text>
+<text x="115" y="184" text-anchor="middle" dominant-baseline="central" font-size="12" fill="#0F6E56">热量与营养素</text></g>
+<path d="M190 174L260 174" fill="none" stroke="#888780" stroke-width="1.5" marker-end="url(#a3)"/>
+<g><rect x="260" y="146" width="150" height="56" rx="8" fill="#E1F5EE" stroke="#0F6E56" stroke-width="0.5"/>
+<text x="335" y="166" text-anchor="middle" dominant-baseline="central" font-size="14" font-weight="500" fill="#085041">规则校验</text>
+<text x="335" y="184" text-anchor="middle" dominant-baseline="central" font-size="12" fill="#0F6E56">过敏原 · 超标提醒</text></g>
+<path d="M410 174L490 174" fill="none" stroke="#888780" stroke-width="1.5" marker-end="url(#a3)"/>
+<g><rect x="490" y="146" width="150" height="56" rx="8" fill="#FAEEDA" stroke="#854F0B" stroke-width="0.5"/>
+<text x="565" y="166" text-anchor="middle" dominant-baseline="central" font-size="14" font-weight="500" fill="#633806">结果可编辑</text>
+<text x="565" y="184" text-anchor="middle" dominant-baseline="central" font-size="12" fill="#854F0B">用户确认后入库</text></g>
+<path d="M565 202L565 232L340 232L340 262" fill="none" stroke="#B4B2A9" stroke-width="1.5" stroke-dasharray="5 4" marker-end="url(#a3)"/>
+<text x="350" y="248" font-size="12" fill="#5F5E5A">校正数据回流，用于模型微调</text>
+</svg>
+</div>
+</section>
+
+<section id="m6">
+<h2><span class="n">6</span>语言与技术选型</h2>
+<p><strong>结论：Python 写算法与后端，TypeScript 写前端。</strong>不要为了"统一语言"用 Node 写模型服务——营养计算和推荐算法生态在 Python 侧，硬搬会浪费大量时间。</p>
+
+<table>
+<tr><th style="width:110px">层</th><th style="width:180px">选型</th><th>理由</th></tr>
+<tr><td>算法 / 后端</td><td><strong>Python 3.11+ · FastAPI</strong></td><td>numpy / pandas / scikit-learn / PyTorch / PuLP 全套现成；FastAPI 自带 OpenAPI 文档，调试快</td></tr>
+<tr><td>Web 前端</td><td><strong>TypeScript · Next.js + Tailwind</strong></td><td>你要的科技感页面和图表（Recharts / ECharts）在 React 生态最成熟</td></tr>
+<tr><td>移动端（可选）</td><td>Flutter（Dart）</td><td>若要 App，一套代码双端；但第一阶段建议只做 Web</td></tr>
+<tr><td>数据库</td><td>PostgreSQL + pgvector</td><td>起步可先用 SQLite 单文件，量起来再迁。pgvector 省掉一个独立向量库</td></tr>
+<tr><td>向量检索</td><td>ChromaDB（本地） / Milvus（规模）</td><td>RAG 菜谱检索；中小规模 ChromaDB 足够</td></tr>
+<tr><td>模型服务</td><td>PyTorch 训练 → ONNX Runtime 推理</td><td>推理部署轻，CPU 也能跑</td></tr>
+<tr><td>LLM 编排</td><td>LangGraph / LlamaIndex</td><td>LangGraph 做有状态的对话流程最顺手</td></tr>
+<tr><td>部署</td><td>Docker Compose</td><td>一条命令起全套，交付和演示都方便</td></tr>
+</table>
+
+<div class="note"><strong>给你的务实建议：</strong>如果是课程项目 / 作品集，<strong>先做 Web</strong>（Python + FastAPI + Next.js），别一上来做 App。App 会吃掉你 60% 时间在打包、签名、适配上，而这些在评审里不加分。真正加分的是：营养计算准确、数据来源可追溯、交互有闭环。</div>
+</section>
+
+<section id="m7">
+<h2><span class="n">7</span>GitHub 开源参考</h2>
+<p>以下都实际存在，按「抄什么」分类。建议先读前三个。</p>
+
+<div class="repo">
+  <div class="h"><span class="nm">simonoppowa/OpenNutriTracker</span><span class="lg">Dart / Flutter · GPLv3 · 2.5k+ stars</span></div>
+  <div class="why"><strong>最值得抄产品设计。</strong>它把每个公式都标了出处（热量用 IOM 2005、BMI 用 WHO、宏量用 WHO TRS 916、活动消耗用 2024 Compendium），App 内还有 Sources &amp; References 页面。数据侧同时接了 Open Food Facts、USDA、德国 BLS。这种「每个数字都能溯源」的做法，是这个品类最该学的。</div>
+</div>
+
+<div class="repo">
+  <div class="h"><span class="nm">Sanotsu/china-food-composition-data</span><span class="lg">JSON / SQLite</span></div>
+  <div class="why"><strong>做中文项目的关键资源。</strong>《中国食物成分表（第 6 版）》的营养素部分已 OCR 转成 JSON，并附了导入 SQLite 的脚本，另有常见食物 GI 数据。省掉你自己录几千条食物的工作量。</div>
+</div>
+
+<div class="repo">
+  <div class="h"><span class="nm">Decade-qiu/CookHero（亦见 petercao/CookHero）</span><span class="lg">Python · FastAPI + React · Apache 2.0</span></div>
+  <div class="why"><strong>最接近你要做的东西。</strong>LLM + RAG + 多模态 Subagent 的饮食管理 Agent，支持智能菜谱查询、个性化饮食计划、AI 饮食记录、营养分析、Web 搜索增强。技术栈 FastAPI + React + PostgreSQL + Milvus + Redis，还内置 ReAct 工具调用与 RAGAS 评估。架构可以直接参考。</div>
+</div>
+
+<div class="repo">
+  <div class="h"><span class="nm">RitamRixx/NutriGen_AI</span><span class="lg">Python · LangGraph + ChromaDB</span></div>
+  <div class="why">对话式收集画像 → 自动算 BMI/BMR/TDEE → RAG 检索 → 生成 7 天餐单。LangGraph 的 StateGraph 流程（profile_structurer → metrics_calculator → query_builder → diet_generator）写得非常清晰，适合照着搭你自己的对话流程。</div>
+</div>
+
+<div class="repo">
+  <div class="h"><span class="nm">CheeChoong14/Food-Recipe-Recommender-System</span><span class="lg">Python · FastAPI + React</span></div>
+  <div class="why">基于 Food.com 数据集的混合推荐：TF-IDF + cosine 做内容过滤，KNN 做协同过滤，再融合。代码量小、结构清楚，是推荐模块的现成骨架。</div>
+</div>
+
+<div class="repo">
+  <div class="h"><span class="nm">WUT-IDEA/MealRec</span><span class="lg">Python · 数据集 + 模型</span></div>
+  <div class="why">论文配套仓库，专做「一餐由前菜+主菜+甜点组成」的 bundle 推荐，提出了类别约束模型。想做组合排餐而不是单菜推荐时，这是最对口的参考。</div>
+</div>
+
+<div class="repo">
+  <div class="h"><span class="nm">AmirrrezaZ/dish2calories</span><span class="lg">Python · EfficientNet + FastAPI</span></div>
+  <div class="why">Nutrition5k 的复现实现：多标签食材分类 + 质量回归 → 查成分表换算营养。比端到端回归可解释得多，正是第 4 节推荐的路线。另可看 <code>b010001y/Coase-to-Fine_Nutrition_Prediction</code> 和 <code>T0MYYY/Nutrition5k</code>。</div>
+</div>
+
+<div class="repo">
+  <div class="h"><span class="nm">txxxxz/LightTable</span><span class="lg">Next.js 15 + FastAPI</span></div>
+  <div class="why">「冰箱里有什么 → 今天吃什么」的场景。SQLite 存偏好、LlamaIndex + ChromaDB 做菜谱检索、Mem0 做长期记忆。库存驱动推荐这个角度可以直接借鉴。</div>
+</div>
+
+<div class="repo">
+  <div class="h"><span class="nm">Anduin2017/HowToCook</span><span class="lg">中文菜谱语料</span></div>
+  <div class="why">中文菜谱冷启动数据。配合上面几个推荐项目，可以直接拼出中文版菜谱库。</div>
+</div>
+
+<div class="repo">
+  <div class="h"><span class="nm">slimane-lakehal/calorie_tracker</span><span class="lg">Python CLI · SQLite</span></div>
+  <div class="why">小而完整的 BMR/TDEE 参考实现，含食物库、饮食记录、体重追踪、CSV/JSON 导出。想快速验证代谢公式的正确性，读它比读大项目快。</div>
+</div>
+</section>
+
+<section id="m8">
+<h2><span class="n">8</span>开发路线</h2>
+<table>
+<tr><th style="width:110px">阶段</th><th style="width:200px">目标</th><th>交付物</th></tr>
+<tr><td><strong>MVP</strong></td><td>算得准、记得住</td><td>画像引擎（BMR/TDEE/宏量）+ 文本记录 + 成分表查询 + 当日营养汇总。数据源先用中国食物成分表 + HowToCook</td></tr>
+<tr><td><strong>V1</strong></td><td>有闭环</td><td>体重趋势曲线（EMA）、周报、达成率、菜谱内容过滤推荐</td></tr>
+<tr><td><strong>V2</strong></td><td>有智能</td><td>拍照识别 + 估重、约束优化排餐 + 采购清单、慢病规则引擎</td></tr>
+<tr><td><strong>V3</strong></td><td>能对话</td><td>LLM + RAG 问答、自然语言记一餐、个性化解释与建议</td></tr>
+</table>
+<div class="note">顺序不能反。<strong>先把确定性计算做对，再上模型</strong>。很多项目死在反过来做——大模型给的数字没人敢信，又没法定位是哪一步错了。</div>
+</section>
+
+<section id="m9">
+<h2><span class="n">9</span>风险与合规</h2>
+<ul>
+<li><strong>医疗边界：</strong>只能做「营养参考」，不能做诊断、不能给治疗方案。每个结果页都要带免责声明，异常指标提示就医而非自行调整。</li>
+<li><strong>特殊人群：</strong>孕妇、儿童、肾病、糖尿病、进食障碍史用户必须走保守策略（或明确拒答）。参考 OpenNutriTracker 的做法——它的断食计时器入口带内容警告并链接 BEAT / NEDA。</li>
+<li><strong>热量下限：</strong>目标热量必须有硬下限，防止极端节食建议。男 1500 / 女 1200 kcal。</li>
+<li><strong>数据授权：</strong>中国食物成分表商用需授权；USDA 与 Open Food Facts 是 CC0。</li>
+<li><strong>隐私：</strong>健康数据属敏感个人信息，本地优先 / 加密存储，明确告知数据流向。</li>
+<li><strong>估重误差披露：</strong>图像估算必须标注为「估算」，并提供手动修正入口。</li>
+</ul>
+</section>
+
+<section id="m10">
+<h2><span class="n">10</span>改造成微信小程序的可行性与代价</h2>
+<p><strong>结论：技术上一行后端代码都不用改，但产品定位和主体资质必须调整，否则大概率卡在审核。</strong>前后端分离的分层在这里拿到了回报——换前端壳不影响算法层。</p>
+
+<h3>10.1 小程序端反而更强的三个点</h3>
+<div class="grid">
+  <div class="m"><div class="t">wx.scanCode 扫条码</div><div class="d">包装食品扫码是最高频入口。Web 端做扫码要自己接摄像头 + 解码库，体验差很多。小程序一个 API 搞定。</div></div>
+  <div class="m"><div class="t">拍照上传链路短</div><div class="d">chooseMedia 直接拿图 → uploadFile 上传 → 后端推理。这是本产品最核心的交互，移动端天然比 PC 合适。</div></div>
+  <div class="m"><div class="t">分享与留存</div><div class="d">微信内分享、无需安装、桌面图标，用户每天打开的心理成本远低于访问一个网址。</div></div>
+</div>
+
+<h3>10.2 必须接受的硬约束</h3>
+<table>
+<tr><th style="width:130px">约束</th><th style="width:200px">具体限制</th><th>应对</th></tr>
+<tr><td><strong>类目与审核</strong><br>（最大风险）</td><td>医疗服务属<strong>个人主体未开放类目</strong>，微信官方明确列示：在线问诊、预约挂号、非处方药交易等一律需企业主体 + 资质</td><td>把产品定位成「饮食记录与营养查询工具」，服务类目选「工具 &gt; 信息查询」。全站文案禁止出现治疗、诊断、疗效、用药建议、保证减重等词。首页固定免责声明</td></tr>
+<tr><td><strong>微信支付</strong></td><td>个人主体无法开通微信支付，也没法用手机号快速验证组件</td><td>做免费工具。要收费必须企业主体 + 商户号</td></tr>
+<tr><td><strong>包体积</strong></td><td>主包 2 MB，总包 20 MB（含分包）</td><td>模型一律放云端。几百 MB 的权重不可能塞进小程序</td></tr>
+<tr><td><strong>网络请求</strong></td><td>必须 HTTPS，且域名需在后台配置为 request 合法域名；自建服务器还需 ICP 备案</td><td>方案 A：自建服务器 + 已备案域名 + FastAPI。方案 B：微信云开发 HTTP 云函数（Python 3），用平台默认域名可省去备案与运维</td></tr>
+<tr><td><strong>云函数语言</strong></td><td>云开发的「普通（事件型）云函数」控制台模板目前只有 Node.js；Python 3 属于 HTTP 云函数分类</td><td>用 HTTP 云函数 + <code>wx.request</code> 调用，而不是 <code>wx.cloud.callFunction</code></td></tr>
+<tr><td><strong>本地存储</strong></td><td>单个小程序 storage 上限约 10 MB</td><td>画像、今日记录可缓存；历史数据与成分库走服务端</td></tr>
+<tr><td><strong>健康数据合规</strong></td><td>健康生理信息属《个人信息保护法》定义的敏感个人信息，需境内存储、单独同意</td><td>配置《用户隐私保护指引》并声明采集项与用途；提供查询、更正、删除、注销入口</td></tr>
+</table>
+
+<h3>10.3 技术对照</h3>
+<table>
+<tr><th style="width:130px">能力</th><th style="width:200px">Web（Next.js）</th><th>微信小程序</th></tr>
+<tr><td>页面与样式</td><td>React + Tailwind</td><td>WXML + WXSS；或用 Taro（React 语法）复用组件思路</td></tr>
+<tr><td>拍照 / 选图</td><td>input file / getUserMedia</td><td><code>wx.chooseMedia</code>、<code>&lt;camera&gt;</code> 组件</td></tr>
+<tr><td>条码扫描</td><td>需自接解码库，体验差</td><td><code>wx.scanCode</code>，原生体验</td></tr>
+<tr><td>图表</td><td>Recharts / ECharts</td><td>ec-canvas（ECharts 小程序版）或 F2</td></tr>
+<tr><td>本地缓存</td><td>localStorage / IndexedDB</td><td><code>wx.setStorage</code>（约 10 MB）</td></tr>
+<tr><td>登录</td><td>自建账号体系</td><td><code>wx.login</code> + code2session，个人主体无法用手机号快速验证组件</td></tr>
+<tr><td>网络请求</td><td>fetch / axios</td><td><code>wx.request</code>（受合法域名白名单限制）</td></tr>
+</table>
+
+<h3>10.4 建议路径</h3>
+<ul>
+<li><strong>如果目标是课程项目 / 作品集评审：</strong>先做 Web。小程序要装开发者工具、配合法域名、等审核，迭代速度慢一档；评审看的是算法正确性和数据可追溯，不是端形态。</li>
+<li><strong>如果目标是真上线给人用：</strong>直接做小程序更合适——核心入口（拍照 + 扫码）在移动端才成立。但先把后端 API 用 Web 或 Postman 调通，再写小程序端。</li>
+<li><strong>跨端复用：</strong>后端完全复用。前端若想省事，用 Taro（React 语法，可编译到小程序 + H5）；若追求原生体验和小包体，写原生小程序。</li>
+<li><strong>审核前置动作：</strong>开发前先去小程序后台确认服务类目能不能选「工具 &gt; 信息查询」，并准备一份免责声明文案模板。别等功能做完才发现类目不符被驳回。</li>
+</ul>
+
+<div class="warn"><strong>一句话总结风险：</strong>这个产品能不能上小程序，卡点不在技术，在「医疗器械/医疗服务」的定性。只要它看起来像在给医疗建议，个人主体就过不了。把它做成「记录 + 查询 + 统计」的工具，就能过。</div>
+</section>
+
+<footer>
+智能饮食健康助手 · 技术方案 v1 — 由 W 整理，2026-10-13<br>
+文中公式均来自公开营养学标准（Mifflin-St Jeor、Katch-McArdle、Atwater、WHO、IOM DRIs），开源项目链接均已在第 7 节给出。
+</footer>
+
+</div>
+</body>
+</html>

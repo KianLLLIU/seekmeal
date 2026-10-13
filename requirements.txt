@@ -1,0 +1,10 @@
+# 核心能力（营养计算、中文食物库、推荐、排餐、CLI）零第三方依赖，
+# Python 3.10+ 标准库即可运行。以下仅为 API 层与测试所需。
+
+# API 层
+fastapi>=0.110
+uvicorn>=0.27
+pydantic>=2.6
+
+# 接口测试（fastapi.testclient 依赖）
+httpx>=0.26
