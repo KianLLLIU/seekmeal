@@ -204,6 +204,7 @@ def set_profile(p: ProfileIn) -> dict:
     if p.activity not in ACTIVITY_FACTORS:
         raise HTTPException(400, f"未知活动水平：{p.activity}")
     _state["profiles"][p.user_id] = p.model_dump()
+    _prune("profiles")
     budget = compute_energy_budget(
         sex=p.sex, weight_kg=p.weight, height_cm=p.height, age=p.age,
         activity=p.activity, goal=p.goal, weekly_delta_kg=p.weekly_delta_kg,
@@ -402,6 +403,7 @@ def add_weight(body: WeightIn) -> dict:
     _state["weights"].setdefault(key, [])
     day = body.day or date.today().isoformat()
     _state["weights"][key].append((day, body.weight))
+    _prune("weights")
     return {"count": len(_state["weights"][key])}
 
 

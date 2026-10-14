@@ -780,6 +780,50 @@
     document.getElementById("api-address").textContent = `· ${API_ORIGIN.replace(/^https?:\/\//, "")}`;
     document.getElementById("api-base-text").textContent = API_ORIGIN;
 
+    const USER_ID_KEY = "seekmeal.userId";
+
+    // 生成一个只含 URL 安全字符的访客标识：后端 user_id 限长 40，
+    // 且会被 encodeURIComponent 拼进路径，因此限定 [A-Za-z0-9._-]。
+    function generateUserId() {
+      const time = Date.now().toString(36);
+      // Math.random().toString(36) 偶尔取到空串（例如随机值为 0），兜底补一段。
+      const random = Math.random().toString(36).slice(2, 8) || "000000";
+      return `u-${time}${random}`.slice(0, 40);
+    }
+
+    // 归一化访客标识：后端 user_id 限长 40；该值会被 encodeURIComponent 拼进
+    // URL 路径，因此要剔除会切断路径的字符。中文等其余字符交给 encodeURIComponent，
+    // 后端可正常接收，不要一并抹掉。
+    function normalizeUserId(value) {
+      const cleaned = String(value || "")
+        .trim()
+        .replace(/[/?#%\s]+/g, "")
+        .slice(0, 40);
+      return cleaned || generateUserId();
+    }
+
+    // 读取本机保存的标识；没有（或不可用）时就生成一个。localStorage 在
+    // Safari 隐私模式下会直接抛异常，这里必须静默降级，不能打断整段脚本。
+    function currentUserId() {
+      let saved = "";
+      try {
+        saved = localStorage.getItem(USER_ID_KEY);
+      } catch (error) {
+        /* 忽略：读取失败时退回到本次生成的临时标识 */
+      }
+      const normalized = saved ? normalizeUserId(saved) : generateUserId();
+      try {
+        // 脏值只在此处被纠正一次，写回后后续读取直接命中干净值。
+        localStorage.setItem(USER_ID_KEY, normalized);
+      } catch (error) {
+        /* 忽略：写入失败时仍返回可用标识，仅本次会话有效 */
+      }
+      return normalized;
+    }
+
+    // 每位访客各自持有一个标识，多人同时访问不会互相覆盖记录。
+    syncUserId(currentUserId());
+
     // 「设置 API 地址」面板：保存后整页重连，避免中途改基址导致状态错乱。
     (function initApiConfig() {
       const toggle = document.getElementById("api-config-toggle");
@@ -860,10 +904,16 @@
     }
 
     function syncUserId(userId) {
-      const safeId = String(userId || "default").trim() || "default";
+      const safeId = normalizeUserId(userId);
       ["profile-user", "meal-user", "plan-user"].forEach((id) => {
         document.getElementById(id).value = safeId;
       });
+      // 手填用户名后刷新不应被生成值覆盖，因此同步持久化本机标识。
+      try {
+        localStorage.setItem(USER_ID_KEY, safeId);
+      } catch (error) {
+        /* 忽略：写入失败不影响填入 */
+      }
     }
 
     function showMessage(id, text, kind = "info") {
@@ -1100,7 +1150,7 @@
       clearMessage("profile-message");
       setBusy(elements.profileForm, true);
       const form = new FormData(elements.profileForm);
-      const userId = String(form.get("user_id") || "default").trim() || "default";
+      const userId = String(form.get("user_id") || "").trim() || currentUserId();
       const bodyFatRaw = String(form.get("body_fat_pct") || "").trim();
       const body = {
         user_id: userId,
@@ -1131,7 +1181,7 @@
       clearMessage("meal-message");
       setBusy(elements.mealForm, true);
       const form = new FormData(elements.mealForm);
-      const userId = String(form.get("user_id") || "default").trim() || "default";
+      const userId = String(form.get("user_id") || "").trim() || currentUserId();
       const body = {
         text: String(form.get("text") || "").trim(),
         user_id: userId,
@@ -1184,7 +1234,7 @@
       clearMessage("plan-message");
       setBusy(elements.planForm, true);
       const form = new FormData(elements.planForm);
-      const userId = String(form.get("user_id") || "default").trim() || "default";
+      const userId = String(form.get("user_id") || "").trim() || currentUserId();
       const body = {
         user_id: userId,
         preferences: splitList(form.get("preferences")),
