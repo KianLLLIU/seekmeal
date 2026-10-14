@@ -1,0 +1,560 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SeekMeal · 任务完整流程总结书</title>
+<style>
+  :root{
+    --bg:#eef3f6; --card:#ffffff; --ink:#132330; --sub:#5b6d7c;
+    --line:#dde6ec; --teal:#0f9d8f; --teal-d:#0b7d72; --blue:#1565c0;
+    --amber:#b45309; --rose:#be123c; --violet:#6d28d9;
+    --teal-soft:#e3f6f3; --blue-soft:#e8f1fc; --amber-soft:#fef3e2;
+    --rose-soft:#fdeaef; --violet-soft:#f0eafd;
+  }
+  *{box-sizing:border-box}
+  body{
+    margin:0;background:var(--bg);color:var(--ink);line-height:1.78;
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","Microsoft YaHei","PingFang SC","Hiragino Sans GB",sans-serif;
+    -webkit-font-smoothing:antialiased;
+  }
+  .wrap{max-width:1000px;margin:0 auto;padding:44px 22px 90px}
+
+  /* ---------- hero ---------- */
+  header.hero{
+    position:relative;overflow:hidden;color:#fff;border-radius:20px;
+    padding:44px 38px 38px;margin-bottom:34px;
+    background:linear-gradient(125deg,#0b7d72 0%,#0f9d8f 42%,#1565c0 100%);
+    box-shadow:0 18px 44px rgba(11,125,114,.24);
+  }
+  header.hero::after{
+    content:"";position:absolute;right:-90px;top:-90px;width:320px;height:320px;
+    border-radius:50%;background:radial-gradient(circle,rgba(255,255,255,.22),transparent 68%);
+  }
+  header.hero::before{
+    content:"";position:absolute;left:-60px;bottom:-120px;width:260px;height:260px;
+    border-radius:50%;background:radial-gradient(circle,rgba(255,255,255,.14),transparent 70%);
+  }
+  .hero-in{position:relative;z-index:2}
+  .eyebrow{display:inline-block;font-size:12px;letter-spacing:2.6px;text-transform:uppercase;
+    background:rgba(255,255,255,.16);border:1px solid rgba(255,255,255,.32);
+    padding:5px 13px;border-radius:999px;margin-bottom:16px}
+  header.hero h1{margin:0 0 10px;font-size:31px;letter-spacing:.6px;line-height:1.3}
+  header.hero .lede{margin:0;font-size:15px;opacity:.94;max-width:720px}
+  .badges{margin-top:20px;display:flex;flex-wrap:wrap;gap:8px}
+  .badge{background:rgba(255,255,255,.17);border:1px solid rgba(255,255,255,.3);
+    padding:5px 13px;border-radius:999px;font-size:12.5px;white-space:nowrap}
+
+  /* ---------- generic ---------- */
+  h2{font-size:20px;margin:42px 0 14px;padding-left:13px;border-left:4px solid var(--teal);
+    display:flex;align-items:center;gap:10px}
+  h2 .num{font-size:12px;color:var(--teal);font-weight:700;letter-spacing:1px;
+    background:var(--teal-soft);border-radius:6px;padding:3px 8px}
+  h3{font-size:15.5px;margin:26px 0 8px;color:var(--teal-d)}
+  h4{font-size:14px;margin:18px 0 6px;color:var(--ink)}
+  p{margin:9px 0}
+  ul,ol{margin:9px 0;padding-left:22px}
+  li{margin:5px 0}
+  code{background:#e9f0f4;padding:1px 6px;border-radius:4px;
+    font-family:ui-monospace,Consolas,"Cascadia Mono",monospace;font-size:12.5px;color:#25404f}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:22px 24px;margin:16px 0}
+  .note{background:var(--amber-soft);border-left:4px solid var(--amber);padding:13px 17px;
+    border-radius:8px;margin:14px 0;font-size:13.8px}
+  .ok{background:var(--teal-soft);border-left:4px solid var(--teal);padding:13px 17px;
+    border-radius:8px;margin:14px 0;font-size:13.8px}
+  .warn{background:var(--rose-soft);border-left:4px solid var(--rose);padding:13px 17px;
+    border-radius:8px;margin:14px 0;font-size:13.8px}
+  .note b,.ok b,.warn b{color:#0e1e2a}
+
+  table{width:100%;border-collapse:collapse;margin:14px 0;font-size:13.3px;background:var(--card)}
+  th,td{border:1px solid var(--line);padding:9px 12px;text-align:left;vertical-align:top}
+  th{background:#e8f0f4;font-weight:600;white-space:nowrap}
+  tbody tr:nth-child(even){background:#fafcfd}
+
+  /* ---------- delivery links ---------- */
+  .links{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:13px;margin-top:8px}
+  .link{display:block;background:var(--card);border:1px solid var(--line);border-radius:13px;
+    padding:17px 19px;text-decoration:none;color:var(--ink);transition:.16s;border-left:4px solid var(--teal)}
+  .link:hover{border-color:var(--teal);box-shadow:0 6px 20px rgba(15,157,143,.14);transform:translateY(-2px)}
+  .link b{display:block;font-size:14.5px;margin-bottom:4px}
+  .link span{font-size:12.5px;color:var(--sub);word-break:break-all}
+  .link.local{border-left-color:var(--violet)}
+  .link.local:hover{border-color:var(--violet);box-shadow:0 6px 20px rgba(109,40,217,.14)}
+  .link.zip{border-left-color:var(--blue)}
+  .link.zip:hover{border-color:var(--blue);box-shadow:0 6px 20px rgba(21,101,192,.14)}
+
+  /* ---------- metric strip ---------- */
+  .metrics{display:grid;grid-template-columns:repeat(auto-fit,minmax(132px,1fr));gap:11px;margin:18px 0}
+  .metric{background:var(--card);border:1px solid var(--line);border-radius:12px;
+    padding:15px 14px;text-align:center}
+  .metric .v{font-size:23px;font-weight:700;color:var(--teal-d);line-height:1.25;
+    font-family:ui-monospace,Consolas,monospace}
+  .metric .k{font-size:11.5px;color:var(--sub);margin-top:3px;letter-spacing:.3px}
+
+  /* ---------- timeline ---------- */
+  .tl{position:relative;margin:24px 0 8px;padding-left:34px}
+  .tl::before{content:"";position:absolute;left:11px;top:6px;bottom:6px;width:2px;
+    background:linear-gradient(180deg,var(--teal),var(--blue),var(--violet));border-radius:2px}
+  .tl-item{position:relative;margin-bottom:20px}
+  .tl-item::before{content:"";position:absolute;left:-30px;top:5px;width:14px;height:14px;
+    border-radius:50%;background:#fff;border:3px solid var(--teal);box-shadow:0 0 0 3px rgba(15,157,143,.12)}
+  .tl-item.b::before{border-color:var(--blue);box-shadow:0 0 0 3px rgba(21,101,192,.12)}
+  .tl-item.v::before{border-color:var(--violet);box-shadow:0 0 0 3px rgba(109,40,217,.12)}
+  .tl-item.r::before{border-color:var(--rose);box-shadow:0 0 0 3px rgba(190,18,60,.12)}
+  .tl-h{display:flex;flex-wrap:wrap;align-items:baseline;gap:9px}
+  .tl-h b{font-size:15px}
+  .tl-h .when{font-size:11.5px;color:var(--sub);font-family:ui-monospace,Consolas,monospace;
+    background:#e8f0f4;border-radius:5px;padding:2px 7px}
+  .tl-b{font-size:13.5px;color:#33475a;margin-top:4px}
+  .tl-out{margin-top:6px;font-size:12.5px;color:var(--teal-d)}
+  .tl-out b{color:var(--teal-d)}
+
+  /* ---------- stage header ---------- */
+  .stage{background:linear-gradient(100deg,#f2f8fa,#eaf2f7);border:1px solid var(--line);
+    border-left:4px solid var(--teal);border-radius:12px;padding:14px 18px;margin:26px 0 12px}
+  .stage .st-t{font-size:11.5px;letter-spacing:2px;text-transform:uppercase;color:var(--teal);
+    font-weight:700}
+  .stage .st-h{font-size:17px;font-weight:600;margin-top:2px}
+  .stage .st-d{font-size:13px;color:var(--sub);margin-top:3px}
+
+  .quote{border-left:3px solid var(--violet);background:var(--violet-soft);
+    padding:11px 16px;border-radius:0 8px 8px 0;margin:13px 0;font-size:13.6px}
+
+  footer{margin-top:52px;padding-top:22px;border-top:1px solid var(--line);
+    color:var(--sub);font-size:12.5px;text-align:center}
+  footer b{color:var(--ink)}
+  .pill{display:inline-block;font-size:11.5px;border-radius:6px;padding:2px 9px;margin-right:6px;
+    background:#e8f0f4;color:var(--sub)}
+  .pill.fix{background:var(--rose-soft);color:var(--rose)}
+  .pill.imp{background:var(--blue-soft);color:var(--blue)}
+  .pill.new{background:var(--teal-soft);color:var(--teal-d)}
+  .seal{display:inline-block;margin-top:14px;font-size:12px;color:#fff;
+    background:rgba(255,255,255,.16);border:1px solid rgba(255,255,255,.32);
+    padding:5px 13px;border-radius:999px}
+  @media (max-width:640px){
+    header.hero{padding:32px 22px}
+    header.hero h1{font-size:23px}
+    .wrap{padding:26px 14px 60px}
+    table{font-size:12.4px}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header class="hero">
+  <div class="hero-in">
+    <span class="eyebrow">Task Flow Retrospective</span>
+    <h1>SeekMeal · 智能饮食健康助手<br>任务完整流程总结书</h1>
+    <p class="lede">从一句需求到公网可分享的网址 —— 完整记录需求拆解、数据获取、算法实现、开源借鉴、前后端开发、四轮缺陷排查、运行环境配置与最终上线交付的全过程，含每一个真实缺陷的发现方式与修复证据。</p>
+    <div class="badges">
+      <span class="badge">10 次提交</span>
+      <span class="badge">27 项单测全通过</span>
+      <span class="badge">11 处缺陷已修复</span>
+      <span class="badge">已部署 · 多访客隔离</span>
+      <span class="badge">2026-10-13 → 10-14</span>
+    </div>
+    <div class="seal">最终版本 d474afe · 线上与本地逐字节一致</div>
+  </div>
+</header>
+
+<h2><span class="num">00</span>交付总览</h2>
+<div class="links">
+  <a class="link" href="https://seekmeal.app.workbuddy.host/" target="_blank" rel="noopener">
+    <b>🌐 可以分享的网址（线上）</b>
+    <span>https://seekmeal.app.workbuddy.host/ —— 任何联网电脑打开即用，无需安装、无需登录</span>
+  </a>
+  <a class="link" href="https://github.com/KianLLLIU/seekmeal" target="_blank" rel="noopener">
+    <b>🐙 GitHub 仓库（公开）</b>
+    <span>https://github.com/KianLLLIU/seekmeal —— 最终版 d474afe，共 10 次提交</span>
+  </a>
+  <a class="link local">
+    <b>💻 桌面完整程序</b>
+    <span>C:\Users\Kevin L\Desktop\SeekMeal\ —— 双击「SeekMeal 启动器.bat」出中文菜单</span>
+  </a>
+  <a class="link zip">
+    <b>📦 安装压缩包</b>
+    <span>C:\Users\Kevin L\Desktop\SeekMeal.zip —— 87,664 字节 / 24 个文件，解压即可运行</span>
+  </a>
+</div>
+
+<div class="metrics">
+  <div class="metric"><div class="v">24</div><div class="k">交付文件</div></div>
+  <div class="metric"><div class="v">12</div><div class="k">Python 模块</div></div>
+  <div class="metric"><div class="v">100</div><div class="k">条食物数据</div></div>
+  <div class="metric"><div class="v">22</div><div class="k">道菜谱</div></div>
+  <div class="metric"><div class="v">27</div><div class="k">项单元测试</div></div>
+  <div class="metric"><div class="v">11</div><div class="k">处缺陷已修</div></div>
+</div>
+
+<h2><span class="num">01</span>全流程一览</h2>
+<p>整个任务可以切成十一个阶段。下面的时间线是真实发生顺序，括号里是产出物或关键结论。</p>
+
+<div class="tl">
+  <div class="tl-item">
+    <div class="tl-h"><b>① 任务启动与需求澄清</b><span class="when">起点</span></div>
+    <div class="tl-b">明确「做什么、给谁用、到什么程度算完成」。最终定位为<b>中文用户的饮食记录与营养管理工具</b>，工具属性而非医疗属性。</div>
+    <div class="tl-out">产出：一句话产品定义 + 硬性边界（不做诊断、不做医疗建议）</div>
+  </div>
+  <div class="tl-item b">
+    <div class="tl-h"><b>② 功能模块确立（8 模块 → 5 模块）</b><span class="when">设计期</span></div>
+    <div class="tl-b">先做模块划分再写代码。初版 8 个模块分 4 层，MVP 阶段砍掉拍照估卡、知识问答 Agent，体重趋势只留算法不留界面。</div>
+    <div class="tl-out">产出：5 个必做模块的取舍表 + 一条贯穿原则（数值全由确定性代码算）</div>
+  </div>
+  <div class="tl-item b">
+    <div class="tl-h"><b>③ 资料获取</b><span class="when">设计期</span></div>
+    <div class="tl-b">营养数据以《中国食物成分表（第 6 版）》为基准，Open Food Facts / USDA 作为可合法替换源；同时调研微信小程序规则，确认产品定位。</div>
+    <div class="tl-out">产出：100 条食物 + 22 道菜谱的演示数据集、<code>portions</code> 份量字段设计</div>
+  </div>
+  <div class="tl-item">
+    <div class="tl-h"><b>④ 算法选型与实现</b><span class="when">开发期</span></div>
+    <div class="tl-b">代谢公式（Mifflin-St Jeor / Katch-McArdle）、TDEE 活动系数、宏量分配、血糖负荷、EMA 与卡尔曼滤波、中文四级降级匹配、TF-IDF 混合推荐、贪心排餐。</div>
+    <div class="tl-out">产出：11 项算法，核心模块<b>零第三方依赖</b></div>
+  </div>
+  <div class="tl-item v">
+    <div class="tl-h"><b>⑤ 开源项目借鉴</b><span class="when">开发期</span></div>
+    <div class="tl-b">直接借鉴 5 个（公式溯源做法、模块划分、TF-IDF 思路、中文成分数据、菜谱语料），另调研 5 个作为 V2 架构参考。</div>
+    <div class="tl-out">产出：借鉴清单，每条写明「借鉴了什么」而非笼统致谢</div>
+  </div>
+  <div class="tl-item">
+    <div class="tl-h"><b>⑥ 前后端开发</b><span class="when">开发期</span></div>
+    <div class="tl-b">后端 FastAPI 七个模块分层；前端单文件原生 HTML/CSS/JS，零构建零 CDN。<code>GET /</code> 直接返回页面，让页面与接口<b>同源</b>。</div>
+    <div class="tl-out">产出：可用的 API + 三面板网页（身体档案 / 饮食分析 / 一日排餐）</div>
+  </div>
+  <div class="tl-item r">
+    <div class="tl-h"><b>⑦ 测试与缺陷修复（四轮）</b><span class="when">关键阶段</span></div>
+    <div class="tl-b">27 项单测通过后仍连续发现 11 处缺陷。真正的 Bug 全部由<b>端到端实跑</b>暴露，看代码一个也看不出来。</div>
+    <div class="tl-out">产出：边界审计 + 独立回归验证机制，本轮所有缺陷闭环</div>
+  </div>
+  <div class="tl-item v">
+    <div class="tl-h"><b>⑧ 打包与桌面交付</b><span class="when">交付期</span></div>
+    <div class="tl-b">统一整理到 <code>SeekMeal/</code>，做中文菜单启动器、桌面副本与可分享压缩包。</div>
+    <div class="tl-out">产出：桌面程序 + <code>SeekMeal.zip</code> + 菜单式 <code>.bat</code></div>
+  </div>
+  <div class="tl-item b">
+    <div class="tl-h"><b>⑨ 运行环境配置</b><span class="when">交付期</span></div>
+    <div class="tl-b">在隔离目录建专用虚拟环境（Python 3.13.14 + 17 个包），配套幂等环境引擎与终端的激活脚本。</div>
+    <div class="tl-out">产出：<code>tools/setup_env.py</code> / <code>setup_env.bat</code> / <code>env.bat</code></div>
+  </div>
+  <div class="tl-item r">
+    <div class="tl-h"><b>⑩ 公网部署与多访客隔离</b><span class="when">上线期</span></div>
+    <div class="tl-b">解决前端 API 地址同源自适应、云端 <code>PORT</code> 入口，并修复「所有访客共用同一份数据」的严重问题。</div>
+    <div class="tl-out">产出：可分享的线上网址 + 每位访客独立身份标识</div>
+  </div>
+  <div class="tl-item">
+    <div class="tl-h"><b>⑪ 最终交付与验收</b><span class="when">收尾</span></div>
+    <div class="tl-b">代码推送 GitHub、线上与本地逐字节比对、桌面副本与压缩包重建、文档归档。</div>
+    <div class="tl-out">产出：本总结书 + 项目完成报告 + 全部交付物同步</div>
+  </div>
+</div>
+
+<h2><span class="num">02</span>阶段一 · 任务启动与需求澄清</h2>
+<div class="stage">
+  <div class="st-t">Stage 01</div>
+  <div class="st-h">先问清「给谁用、做到什么程度」，再动手</div>
+  <div class="st-d">起点</div>
+</div>
+<p>项目一开始并没有直接写代码，而是先把三件事问清楚：使用场景（中文饮食、日常记录）、使用者（个人自查为主）、完成标准（能演示、能分享、能给别人用）。</p>
+<p>这一步定下的最重要边界是<b>产品定位</b>：它是<b>工具</b>，不是医疗器械。所以全部文案避开治疗、诊断、疗效表述，页面底部常驻免责声明，接口返回里也带上 <code>disclaimer</code> 字段。</p>
+<div class="quote">定边界比定功能更早。功能可以后加，定位错了后面全是返工。</div>
+
+<h2><span class="num">03</span>阶段二 · 功能模块的确立</h2>
+<div class="stage">
+  <div class="st-t">Stage 02</div>
+  <div class="st-h">8 个模块分 4 层，MVP 砍到 5 个</div>
+  <div class="st-d">设计期</div>
+</div>
+<p>最初方案是 8 个模块：用户画像与代谢引擎、多模态饮食记录、食物成分与营养核算、菜谱与食物推荐、膳食计划与排餐、健康评估与风险预警、可视化与反馈闭环、营养知识问答 Agent。进入 MVP 阶段做了取舍：</p>
+<table>
+  <thead><tr><th>模块</th><th>取舍</th><th>理由</th></tr></thead>
+  <tbody>
+    <tr><td>代谢引擎（BMR / TDEE / 宏量）</td><td><span class="pill new">做</span></td><td>整个系统的地基，所有目标值从它派生</td></tr>
+    <tr><td>中文食物库 + 自然语言解析</td><td><span class="pill new">做</span></td><td>中文交互的核心差异点，不能照搬 USDA</td></tr>
+    <tr><td>营养核算与达标评估</td><td><span class="pill new">做</span></td><td>用户每天真正会看的界面</td></tr>
+    <tr><td>菜谱推荐 + 三餐排餐</td><td><span class="pill new">做</span></td><td>从「记录」走向「建议」的关键一步</td></tr>
+    <tr><td>网页界面 + API</td><td><span class="pill new">做</span></td><td>决定这东西能不能演示、能不能给人用</td></tr>
+    <tr><td>拍照估卡（多模态）</td><td><span class="pill fix">砍</span></td><td>需训练数据与目标检测模型，开源方案误差 20–30%，MVP 投入产出比太低</td></tr>
+    <tr><td>体重趋势可视化</td><td><span class="pill imp">只留算法</span></td><td>EMA 与卡尔曼滤波已实现，图表界面留到 V2</td></tr>
+    <tr><td>知识问答 Agent（RAG）</td><td><span class="pill fix">砍</span></td><td>需向量库与权威指南语料，且存在医疗建议合规风险</td></tr>
+  </tbody>
+</table>
+<div class="note"><b>一条贯穿全程的原则：所有数值必须由确定性代码计算，大语言模型不参与任何数字运算。</b> LLM 只负责组织语言、解释结果。营养数字一旦算错，用户信任立刻归零，而这类错误还极难定位。</div>
+
+<h2><span class="num">04</span>阶段三 · 资料的获取</h2>
+<div class="stage">
+  <div class="st-t">Stage 03</div>
+  <div class="st-h">数据来源可追溯，版权边界先划清</div>
+  <div class="st-d">设计期</div>
+</div>
+<h3>4.1 三类数据来源</h3>
+<ul>
+  <li><b>《中国食物成分表（第 6 版）》</b> —— 中文食物的权威基准。纸质/电子版有版权，本项目内置的是 <b>100 条手工整理的学习演示数据</b>，部分字段参考常见值，商用需取得授权。</li>
+  <li><b>Open Food Facts</b> 与 <b>USDA FoodData Central</b>（均为 CC0）—— 可作为合法的完整数据替代来源，但仍需专业校验与字段清洗。</li>
+  <li><b>Food.com Recipes &amp; Interactions</b>（23 万菜谱 + 100 万交互）—— 菜谱推荐的语料候选。</li>
+</ul>
+<h3>4.2 数据设计上的两个关键决策</h3>
+<div class="card">
+  <p><b>决策一：给食物条目加 <code>portions</code> 字段。</b> 例如米饭 <code>{"1碗": 150}</code>。正是它让「一碗米饭」能被直接换算成 150 克，而不要求用户称重 —— 这是中文场景能否好用的分水岭。</p>
+  <p><b>决策二：菜谱营养不硬编码，由食材关联食物库自动推导。</b> 改食物库，22 道菜的营养自动跟着变，不存在两处数据打架的问题。</p>
+</div>
+<h3>4.3 规则类资料的调研</h3>
+<p>在评估「能否改成微信小程序」时专门查证了官方规则：医疗服务属于个人主体未开放类目；个人主体无法开通微信支付；小程序主包 2MB 限制意味着模型必须放云端；云开发的 Python 3 只存在于 HTTP 云函数分类下。这些结论直接反过来影响了产品定位 —— 工具属性而非医疗属性。</p>
+
+<h2><span class="num">05</span>阶段四 · 算法选型与实现</h2>
+<div class="stage">
+  <div class="st-t">Stage 04</div>
+  <div class="st-h">11 项算法，核心模块零第三方依赖</div>
+  <div class="st-d">开发期</div>
+</div>
+<table>
+  <thead><tr><th>能力</th><th>算法 / 公式</th><th>说明</th></tr></thead>
+  <tbody>
+    <tr><td>BMI 与分级</td><td>体重kg / 身高m²，中国切点 18.5 / 24 / 28</td><td>WHO 与中国标准</td></tr>
+    <tr><td>BMR（默认）</td><td>Mifflin-St Jeor：男 10W+6.25H−5A+5，女 −161</td><td>比 Harris-Benedict 更准，当前主流</td></tr>
+    <tr><td>BMR（知体脂率）</td><td>Katch-McArdle：370 + 21.6 × 去脂体重</td><td>健身人群更准</td></tr>
+    <tr><td>TDEE</td><td>BMR × 活动系数（1.2 / 1.375 / 1.55 / 1.725 / 1.9）</td><td>2024 Compendium</td></tr>
+    <tr><td>目标热量</td><td>由 TDEE 与周变化推导，带安全下限（男 1500 / 女 1200 kcal）</td><td>1 kg 体脂 ≈ 7700 kcal</td></tr>
+    <tr><td>宏量分配</td><td>蛋白 1.2–2.0 g/kg → 脂肪 0.8–1.0 g/kg → 碳水吃剩余热量</td><td>顺序固定：先保肌肉，再保激素（WHO TRS 916）</td></tr>
+    <tr><td>血糖负荷</td><td>GL = GI × 碳水g / 100</td><td>GL 比 GI 实用得多</td></tr>
+    <tr><td>体重趋势</td><td>EMA（α=0.15）与一维卡尔曼滤波</td><td>体重日波动可达 ±1 kg，不平滑没法看趋势</td></tr>
+    <tr><td>中文食物匹配</td><td>四级降级：精确 → 别名 → 子串 → 模糊</td><td>SequenceMatcher + 字符 bigram，不依赖 jieba / sklearn</td></tr>
+    <tr><td>菜谱推荐</td><td>0.6×营养缺口适配 + 0.25×TF-IDF cosine + 0.15×偏好标签</td><td>TF-IDF 自己实现，无第三方依赖</td></tr>
+    <tr><td>三餐排餐</td><td>贪心 + 份量缩放（0.5–2.0×），每餐可配多道菜</td><td>中餐一餐是「主食+菜」的组合，单道菜撑不起一顿</td></tr>
+  </tbody>
+</table>
+<div class="note"><b>排餐踩过的坑：</b>第一版每餐只选一道菜，结果一日总热量只有 1153 kcal，而目标是 2255 —— 差了一半。改成每餐可配多道菜并加份量缩放后，实测对齐到 1884 / 目标 1882，误差 &lt;1%。</div>
+
+<h2><span class="num">06</span>阶段五 · 开源项目的借鉴</h2>
+<div class="stage">
+  <div class="st-t">Stage 05</div>
+  <div class="st-h">借鉴要写清「借鉴了什么」</div>
+  <div class="st-d">开发期</div>
+</div>
+<table>
+  <thead><tr><th>项目</th><th>成熟度 / 价值</th><th>本项目的借鉴方式</th></tr></thead>
+  <tbody>
+    <tr><td>simonoppowa/OpenNutriTracker</td><td>2.5k+ stars，已上架双端</td><td><b>公式溯源做法</b> —— 每个公式标注出处（IOM 2005 / WHO TRS 916 / 2024 Compendium）。本项目落到代码里：每个公式函数的 docstring 都标了来源</td></tr>
+    <tr><td>Sanotsu/china-food-composition-data</td><td>中文成分表整理</td><td>《中国食物成分表》第 6 版已转 JSON / SQLite 并附 GI 数据；本项目内置 100 条为精简演示版，正式使用应换它的全量数据</td></tr>
+    <tr><td>slimane-lakehal/calorie_tracker</td><td>Python CLI，结构完整</td><td>模块划分：BMR/TDEE、食物库、饮食记录、体重追踪如何拆分</td></tr>
+    <tr><td>CheeChoong14/Food-Recipe-Recommender-System</td><td>FastAPI + React</td><td>TF-IDF + cosine 的内容过滤思路，本项目用无依赖方式复刻</td></tr>
+    <tr><td>Anduin2017/HowToCook</td><td>大规模中文菜谱</td><td>菜谱冷启动语料来源</td></tr>
+    <tr><td>Decade-qiu/CookHero</td><td>全栈 + RAG</td><td>V2 参考：FastAPI + React + PostgreSQL + Milvus 的架构</td></tr>
+    <tr><td>RitamRixx/NutriGen_AI</td><td>LangGraph 流程</td><td>V2 参考：画像收集 → 指标计算 → RAG → 生成餐单</td></tr>
+    <tr><td>WUT-IDEA/MealRec</td><td>组合推荐</td><td>V2 参考：把「一餐多道菜」建模为 bundle 推荐</td></tr>
+  </tbody>
+</table>
+<div class="quote">借鉴的原则是「学做法，不复刻代码」。外部数据或代码在使用前都需自行核对最新许可证。</div>
+
+<h2><span class="num">07</span>阶段六 · 前后端开发</h2>
+<div class="stage">
+  <div class="st-t">Stage 06</div>
+  <div class="st-h">后端分层，前端单文件，同源省掉一半部署麻烦</div>
+  <div class="st-d">开发期</div>
+</div>
+<h3>7.1 后端（Python）</h3>
+<p>目录结构：<code>formulas.py</code>（代谢与营养公式）、<code>food_db.py</code>（中文食物库与自然语言解析）、<code>analyzer.py</code>（核算、达标评估、风险规则）、<code>recommend.py</code>（推荐）、<code>planner.py</code>（排餐与采购清单）、<code>cli.py</code>（中文命令行）、<code>api.py</code>（FastAPI）。</p>
+<p>核心五个模块<b>只用标准库</b>，装不装依赖都能跑 —— 这条设计在后面排查「网页打不开」时起了关键作用：能立刻判断出问题不在业务代码，而在解释器选择。</p>
+<p>API 设计上，<code>GET /</code> 直接返回网页，让页面和接口<b>同源</b>。这个决定在后面部署时省掉了跨域的一堆麻烦。</p>
+<h3>7.2 前端（原生 HTML / CSS / JS）</h3>
+<p>单文件、零构建、不引任何 CDN 资源，离线双击也能开。三个核心面板：身体档案（算 BMR / TDEE / 宏量）、饮食分析（中文文本 → 营养汇总与达标评估）、一日排餐（三餐 + 采购清单）。</p>
+<ul>
+  <li><b>同源自适应</b>：<code>location.protocol === "file:"</code> 时走本机固定端口，<code>http(s)://</code> 时走相对路径 —— 一份代码同时适配本地双击与云端托管。</li>
+  <li><b>安全防护</b>：所有 <code>innerHTML</code> 拼接都经 <code>escapeHtml</code>；用户标识从不进入 <code>innerHTML</code>，只赋给 <code>input.value</code>。</li>
+  <li><b>降级可见</b>：服务未启动时给出中文提示而不是白屏；按钮加 <code>aria</code> 状态、提交时按钮文案切「处理中…」。</li>
+</ul>
+
+<h2><span class="num">08</span>阶段七 · 测试与缺陷修复（四轮）</h2>
+<div class="stage">
+  <div class="st-t">Stage 07 · 关键阶段</div>
+  <div class="st-h">27 项单测全过，仍然找出 11 个真 Bug</div>
+  <div class="st-d">贯穿开发与上线期</div>
+</div>
+<div class="warn"><b>这一阶段最重要的结论：单元测试通过 ≠ 程序可用。</b> 所有真正的缺陷都是靠「起真实服务 + 打真实请求 + 逐边界攻击」发现的。看代码一个都看不出来。</div>
+
+<h3>8.1 四轮排查的方式</h3>
+<table>
+  <thead><tr><th>轮次</th><th>触发原因</th><th>排查方式</th><th>发现</th></tr></thead>
+  <tbody>
+    <tr><td>第一轮</td><td>项目首次可用后自查</td><td>端到端实跑真实请求</td><td>活动水平枚举不一致、减脂算成增肥、中文单空格分隔丢数据</td></tr>
+    <tr><td>第二轮</td><td>用户反馈「网页无法使用」</td><td>逐层诊断：线上 → 页面 → 启动器 → 解释器</td><td>启动器选中裸 Python（真正的根因）</td></tr>
+    <tr><td>第三轮</td><td>主动做边界审计</td><td>构造异常输入（0、负数、超长、纯空格）+ 独立回归验证</td><td>体脂率 0 触发 500、请求模型零约束、错误码语义错、内存态无上限</td></tr>
+    <tr><td>第四轮</td><td>用户问「别人电脑能用吗」</td><td>线上实测多访客 + 检查身份标识来源</td><td>整页 JS 崩溃、全体访客共用 <code>default</code> 互相覆盖</td></tr>
+  </tbody>
+</table>
+
+<h3>8.2 缺陷总表（11 处，全部已修复）</h3>
+<table>
+  <thead><tr><th>#</th><th>缺陷</th><th>后果</th><th>修复方式</th></tr></thead>
+  <tbody>
+    <tr><td>1</td><td>活动水平枚举不一致</td><td>网页下拉框与后端枚举不同名，选到某两档直接 400</td><td>前端枚举与后端 <code>ACTIVITY_FACTORS</code> 对齐</td></tr>
+    <tr><td>2</td><td>减脂算成增肥<b>（最严重）</b></td><td>选「减脂」+ 填 0.4 kg/周 → 算出 3073 kcal，比 TDEE 还高 440，等于让用户增肥</td><td>由 <code>goal</code> 仲裁符号方向，正确输出 2193 kcal</td></tr>
+    <tr><td>3</td><td>中文单空格分隔丢数据</td><td>「一碗米饭 鸡胸肉100g」只记了鸡胸肉；「150g 鸡胸肉」克重丢成默认 100g</td><td>改为「空格后跟非数字才切分」+ 数量片段合并</td></tr>
+    <tr><td>4</td><td>体脂率 0 / 100 触发 500</td><td><code>formulas.py</code> 抛 <code>ValueError</code> 无人接收，接口直接崩</td><td>全局 <code>exception_handler</code> 返回 400 + Pydantic <code>ge=3, le=60</code> 双保险</td></tr>
+    <tr><td>5</td><td>请求模型零约束</td><td>体重可填 −50、<code>user_id</code> 可无限长、<code>top_k</code> 可填 100000</td><td>全面补 <code>Field(gt/lt/ge/le/max_length/pattern)</code></td></tr>
+    <tr><td>6</td><td>空文本返回 404</td><td>语义错误 —— 这是客户端错误，不是资源不存在</td><td>改为 400</td></tr>
+    <tr><td>7</td><td>内存态无上限</td><td>公网长跑会被刷爆内存</td><td>加 <code>MAX_USER_SLOTS=2000</code> 与 FIFO 淘汰</td></tr>
+    <tr><td>8</td><td>启动器选中裸 Python</td><td>「网页无法使用」的根因：<code>py -3</code> 指向未装依赖的裸环境，脚本走到失败分支退出</td><td>探测改两段式：必须真跑 <code>import uvicorn, fastapi</code> 才采纳</td></tr>
+    <tr><td>9</td><td>批处理无法执行</td><td><code>setup_env.bat</code> 直接崩溃，报一堆碎片命令 —— 行尾为 LF 且正文混中文导致解析错位</td><td>纯 ASCII + 强制 CRLF 重新生成，<code>.gitattributes</code> 锁死</td></tr>
+    <tr><td>10</td><td>整页 JS 崩溃</td><td>脚本调用未定义函数抛 <code>ReferenceError</code>，其后 400 多行全不执行 —— 页面能开，点任何按钮都没反应</td><td>补齐函数定义（函数声明提升）+ 归一化访客标识</td></tr>
+    <tr><td>11</td><td>全体访客共用同一份数据</td><td>所有访客 <code>user_id</code> 都是 <code>default</code>，别人打开就能看到并覆盖你的记录</td><td>每位访客生成本机独立标识并持久化，含限长与危险字符清洗</td></tr>
+  </tbody>
+</table>
+
+<h3>8.3 修复是怎么被证明有效的</h3>
+<div class="ok">
+  <b>验证手段（不是「看着对」，是实打跑出来的）：</b><br>
+  · <b>回归基线对照</b>：检出旧版代码跑同一套测试脚手架，先复现问题，再用修复版跑一遍证明消失<br>
+  · <b>边界攻击表</b>：超长 200 字符、纯空格、空串、中文、含 <code>/ ? #</code> 的脏值、XSS 载荷、localStorage 读写抛异常，逐条给「预期 / 实测 / 判定」<br>
+  · <b>独立验证</b>：修复者与验证者分离，验证者不重跑修复者跑过的用例，专攻未覆盖边界<br>
+  · <b>线上逐字节比对</b>：抓取线上页面算 sha256，与本地文件比对，确认发布的确实是最新代码<br>
+  · <b>多访客端到端</b>：两个陌生访客各自建档、记餐、排餐、删除，确认数据互不污染
+</div>
+<div class="note"><b>过程中还识别出两个「假问题」</b>，避免了错误修复：<br>
+① 审计脚本一度报「服务卡死」，实为脚本用管道接日志却从不读取，缓冲区写满导致服务端阻塞 —— 改日志落盘后恢复正常；<br>
+② 一个批次任务报「推送成功」，实际远端并未更新 —— 从此把「推送后必须核验远端 sha」定为固定动作。</div>
+
+<h2><span class="num">09</span>阶段八 · 打包与桌面交付</h2>
+<div class="stage">
+  <div class="st-t">Stage 08</div>
+  <div class="st-h">让它成为一个别人能双击就用的东西</div>
+  <div class="st-d">交付期</div>
+</div>
+<ul>
+  <li>桌面完整程序 <code>C:\Users\Kevin L\Desktop\SeekMeal\</code>，双击「SeekMeal 启动器.bat」出中文菜单：命令行 / 启动网页 / 跑测试 / 打开方案文档 / 退出</li>
+  <li>启动器中文菜单全部用 <code>\uXXXX</code> 转义交给 Python 打印，配 <code>chcp 65001</code>，任何代码页下都不乱码</li>
+  <li>额外打包 <code>SeekMeal.zip</code>（87,664 字节 / 24 个文件），解压即用，便于分享</li>
+  <li>桌面副本与项目仓库做<b>逐字节哈希比对</b>，确保交付的不是旧版本 —— 这一步实际抓到过两次副本过期</li>
+</ul>
+
+<h2><span class="num">10</span>阶段九 · 运行环境配置</h2>
+<div class="stage">
+  <div class="st-t">Stage 09</div>
+  <div class="st-h">一个隔离的专用环境，三个入口共用</div>
+  <div class="st-d">交付期</div>
+</div>
+<p>环境放在 <code>%USERPROFILE%\.workbuddy\binaries\python\envs\seekmeal</code>，Python 3.13.14，含 fastapi 0.143.0 / uvicorn 0.54.0 / pydantic 2.14.1 等 17 个包。选这个位置有两个理由：</p>
+<table>
+  <thead><tr><th>理由</th><th>说明</th></tr></thead>
+  <tbody>
+    <tr><td>启动器白名单</td><td>这条路径正是启动器探测列表的第 3 顺位，项目目录和桌面副本<b>共用一份</b>，装一次两边都命中</td></tr>
+    <tr><td>不污染仓库</td><td>不用往 git 里塞几百 MB 的 <code>.venv</code></td></tr>
+    <tr><td>隔离</td><td>包只落在这个隔离目录，不动系统 Python</td></tr>
+  </tbody>
+</table>
+<p>配套三个入口：<code>tools\setup_env.bat</code>（首次配置 / 重建，幂等）、桌面启动器（日常用）、<code>env.bat</code>（终端里激活）。环境引擎还支持 <code>--check</code> 体检、<code>--force</code> 重装、<code>SEEKMEAL_ENV_DIR</code> 换目录、<code>SEEKMEAL_PIP_INDEX</code> 走镜像。</p>
+<div class="note"><b>关键设计：启动器探测分两段。</b> 回显 / 命令行 / 单测走宽松分支（只要解释器能跑）；起网页服务走严格分支（必须实测能 <code>import</code> 依赖）。只「存在」但没装依赖的解释器会被跳过 —— 这正是缺陷 #8 的根治方案。</div>
+
+<h2><span class="num">11</span>阶段十 · 公网部署与多访客隔离</h2>
+<div class="stage">
+  <div class="st-t">Stage 10</div>
+  <div class="st-h">从「我电脑上能跑」到「发给别人就能用」</div>
+  <div class="st-d">上线期</div>
+</div>
+<h3>11.1 部署要解决的三件事</h3>
+<ol>
+  <li><b>前端 API 地址同源自适应</b>：原来写死 <code>http://127.0.0.1:8000</code>，部署后用户浏览器会把请求打到「自己电脑的 127.0.0.1」，页面能开但功能全废。改为按协议自适应。</li>
+  <li><b>新增云端启动入口 <code>server.py</code></b>：监听环境变量 <code>PORT</code>、绑定 <code>0.0.0.0</code>。实测 <code>PORT=8011</code> 时服务只监听 8011，8000 无服务，确认环境变量生效。</li>
+  <li><b>依赖与启动命令</b>：<code>pip install -r requirements.txt</code> → <code>python server.py</code>。</li>
+</ol>
+<h3>11.2 多访客隔离（本轮最后修复的严重问题）</h3>
+<p>用户问「这个网站能在别人的电脑上用吗」，实测揭开两个叠加的问题：</p>
+<div class="card">
+  <p><b>问题 A · 整页 JS 崩溃。</b> 脚本调用了未定义的函数，执行到那行即抛 <code>ReferenceError</code>，其后 400 多行（所有按钮的事件绑定）全不执行。页面能显示，点任何按钮都毫无反应。</p>
+  <p><b>问题 B · 全体访客共用同一份数据。</b> 三个输入框硬编码 <code>value="default"</code>，JS 从不改动它 —— 意味着任何人拿到网址打开，看到的、能改的和能删的都是同一份记录。</p>
+</div>
+<p>修复方案：每位访客首次打开时生成一个专属身份标识（<code>u-</code> + 时间戳 base36 + 随机段），存在自己浏览器里并持久化；标识会做归一化（限长 40、剔除会切断 URL 路径的字符）但<b>保留中文</b> —— 填「刘洺绮」照样能用。</p>
+<div class="ok"><b>线上实测结果（公网真实请求）：</b><br>
+  · 线上页面与本地代码 <b>sha256 完全一致</b>（<code>f5f3b8e6</code>），确认发布的是最新版<br>
+  · <code>GET /</code> → 200，49,489 字节，四个关键函数符号齐备<br>
+  · <code>/health</code> → 200，100 条食物 / 22 道菜谱<br>
+  · 身体档案 → TDEE 2617.6、减脂目标 2067.6 kcal、BMI 22.9<br>
+  · 饮食分析「一碗米饭 150g 鸡胸肉」→ 正确解析 2 条（米饭 150 g + 鸡胸肉 100 g）<br>
+  · 两个陌生访客各自建档：70 kg 那位 2594 kcal、95 kg 那位 2804 kcal；删掉一个的记录，另一个纹丝不动<br>
+  · 中文标识、脏值 <code>a/b?c=1</code>（自动纠正为 <code>abc=1</code>）、隐私模式（localStorage 抛异常）全部正常
+</div>
+
+<h2><span class="num">12</span>阶段十一 · 最终交付与验收</h2>
+<div class="stage">
+  <div class="st-t">Stage 11</div>
+  <div class="st-h">代码、线上、桌面、文档四路对齐</div>
+  <div class="st-d">收尾</div>
+</div>
+<table>
+  <thead><tr><th>交付物</th><th>位置 / 地址</th><th>状态</th></tr></thead>
+  <tbody>
+    <tr><td>线上可分享网址</td><td><code>https://seekmeal.app.workbuddy.host/</code></td><td>已发布，与本地逐字节一致</td></tr>
+    <tr><td>GitHub 仓库</td><td><code>github.com/KianLLLIU/seekmeal</code></td><td>公开，最终提交 <code>d474afe</code>，远端已核验</td></tr>
+    <tr><td>桌面完整程序</td><td><code>Desktop\SeekMeal\</code></td><td>24 文件，与仓库逐字节一致</td></tr>
+    <tr><td>安装压缩包</td><td><code>Desktop\SeekMeal.zip</code></td><td>87,664 字节，解压即用</td></tr>
+    <tr><td>专用运行环境</td><td><code>~\.workbuddy\...\envs\seekmeal</code></td><td>Python 3.13.14 + 17 个包，27 项单测全过</td></tr>
+    <tr><td>技术方案文档</td><td><code>docs\技术方案.html</code></td><td>随仓库提交</td></tr>
+    <tr><td>项目完成报告</td><td><code>docs\项目完成报告.html</code></td><td>成果导向的交付说明</td></tr>
+    <tr><td>任务流程总结书</td><td><code>docs\任务流程总结书.html</code></td><td>本文件</td></tr>
+  </tbody>
+</table>
+
+<h2><span class="num">13</span>提交历史（10 次）</h2>
+<table>
+  <thead><tr><th>提交</th><th>时间</th><th>说明</th></tr></thead>
+  <tbody>
+    <tr><td><code>24059e5</code></td><td>10-13 17:47</td><td>feat: SeekMeal 智能饮食健康助手 Python MVP（中文食物库 + 代谢引擎 + 营养核算 + 排餐 + Web 界面 + 启动入口）</td></tr>
+    <tr><td><code>1a9ebca</code></td><td>10-13 17:57</td><td>fix(web): 活动水平枚举对齐后端；feat(api): 增加 CORS 放行与 GET / 网页入口</td></tr>
+    <tr><td><code>fa48909</code></td><td>10-13 19:26</td><td>fix: goal 与 weekly_delta_kg 方向仲裁、单空格食物分隔、CORS 放行本机任意端口</td></tr>
+    <tr><td><code>eab8c77</code></td><td>10-13 19:29</td><td>chore: 移除验收临时脚本</td></tr>
+    <tr><td><code>6ac7500</code></td><td>10-13 20:08</td><td>feat: 部署上线 —— 新增云端入口 server.py、前端 API 同源自适应、修复克重切分丢失</td></tr>
+    <tr><td><code>57160ec</code></td><td>10-13 21:06</td><td>fix(api,web): 参数边界约束与错误码语义修正，前端交互优化</td></tr>
+    <tr><td><code>1912435</code></td><td>10-13 21:32</td><td>fix(launcher,api,web): 修复本地启动选中裸 Python 导致网页打不开</td></tr>
+    <tr><td><code>ede416a</code></td><td>10-13 21:45</td><td>chore(env): 配置专用 Python 环境并新增一键环境工具</td></tr>
+    <tr><td><code>fa016ca</code></td><td>10-13 21:51</td><td>fix(bat): 批处理改为纯 ASCII + CRLF，修复 setup_env.bat 无法执行</td></tr>
+    <tr><td><code>d474afe</code></td><td>10-14 16:12</td><td><b>fix(web,api): 修复前端整页 JS 崩溃，并让每位访客独立建档（最终版）</b></td></tr>
+  </tbody>
+</table>
+
+<h2><span class="num">14</span>工程方法沉淀</h2>
+<div class="stage">
+  <div class="st-t">Lessons</div>
+  <div class="st-h">这次任务里真正可复用的九条经验</div>
+  <div class="st-d">跨项目适用</div>
+</div>
+<table>
+  <thead><tr><th>#</th><th>经验</th><th>来自哪次教训</th></tr></thead>
+  <tbody>
+    <tr><td>1</td><td><b>修完一层要再验一层。</b> 排查要走到最底层，不能找到一个看起来合理的原因就收工</td><td>「网页无法使用」只修到启动器就停，底下还压着整页 JS 崩溃</td></tr>
+    <tr><td>2</td><td><b>单测通过 ≠ 能用。</b> 语义方向、枚举一致性、真实输入格式，单测都覆盖不到，必须端到端实跑</td><td>减脂被算成增肥，数学自洽但方向反了</td></tr>
+    <tr><td>3</td><td><b>边界输入要主动构造。</b> 0、负数、超长、纯空格、脏字符、存储抛异常，都是真实用户会踩到的</td><td>体脂率填 0 直接把接口打成 500</td></tr>
+    <tr><td>4</td><td><b>修复与验证要分开人。</b> 验证者不重跑修复者的用例，专攻未覆盖边界，才会发现真问题</td><td>独立回归纠正了错误的修复前提</td></tr>
+    <tr><td>5</td><td><b>发布后要核验线上。</b> 「已推送」「已部署」都是声明，不是事实，必须抓回来比对</td><td>某次提交以为推上去了，实际远端没更新</td></tr>
+    <tr><td>6</td><td><b>环境类问题往「依赖实测」上靠。</b> 只看解释器存在与否，一定会选到裸环境</td><td>启动器选中系统 Python 却缺 uvicorn</td></tr>
+    <tr><td>7</td><td><b>Windows 批处理必须纯 ASCII + CRLF。</b> 非 ASCII 字节会让解析整体错位，LF 会让标签定位失败</td><td>setup_env.bat 崩成一堆碎片命令</td></tr>
+    <tr><td>8</td><td><b>交付前做哈希比对。</b> 桌面副本、压缩包、仓库三者最容易各自过期</td><td>桌面副本与 zip 连续两轮被发现是旧版</td></tr>
+    <tr><td>9</td><td><b>默认值即风险。</b> 一个硬编码的 <code>default</code> 就足以让全部用户共用同一份数据</td><td>所有访客写进同一个桶，互相覆盖</td></tr>
+  </tbody>
+</table>
+
+<h2><span class="num">15</span>已知限制与下一步</h2>
+<h3>15.1 当前限制（诚实说明，非缺陷）</h3>
+<ol>
+  <li><b>内置数据是演示数据。</b> 100 条食物、22 道菜谱，未覆盖品牌差异、烹饪损耗、生熟重换算与个体差异，<b>严禁用于实际健康决策</b>。</li>
+  <li><b>排餐是贪心算法。</b> 热量通常接近目标，但脂肪或碳水仍可能偏离 20–30%，生产版本应换整数规划。</li>
+  <li><b>状态存内存。</b> 云端服务重启后记录会清空，没有账号、数据库与持久化。</li>
+  <li><b>无登录鉴权。</b> 现在做到了「各自独立」，但不是「各自保密」—— 知道对方标识就能读到数据。正式多人使用需要加登录。</li>
+  <li><b>自然语言解析范围有限。</b> 能识别内置名称、别名、克重与常见量词，不是通用语言模型。</li>
+  <li><b>无拍照识别、无协同过滤。</b> 这两块都在 V2 范围。</li>
+</ol>
+<h3>15.2 下一步建议</h3>
+<ul>
+  <li>把食物库换成合法授权的全量数据（Sanotsu 项目或自建校验表）—— 这是从「演示」走向「可用」的第一步</li>
+  <li>排餐改用整数规划，把宏量偏差压下来</li>
+  <li>加 SQLite 持久化 + 简单账号，让记录不再丢失、数据真正隔离</li>
+  <li>若要真做微信小程序：先确认「工具 &gt; 信息查询」类目可选，文案避开治疗 / 诊断 / 疗效，个人主体不做任何支付</li>
+</ul>
+
+<footer>
+  <b>SeekMeal · 智能饮食健康助手 —— 任务完整流程总结书</b><br>
+  最终版本 <code>d474afe</code> · 10 次提交 · 11 处缺陷已修复 · 线上与本地逐字节一致<br>
+  <span style="display:block;margin-top:8px">本工具仅用于饮食记录与营养参考，不构成医疗建议，不能替代医生诊疗。</span>
+</footer>
+
+</div>
+</body>
+</html>

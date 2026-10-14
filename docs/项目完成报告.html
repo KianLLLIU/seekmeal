@@ -1,0 +1,213 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SeekMeal 智能饮食健康助手 · 项目完成报告</title>
+<style>
+  :root{
+    --bg:#f4f7f8; --card:#ffffff; --ink:#152431; --sub:#5a6b7b;
+    --line:#e2e9ee; --brand:#0f9d8f; --brand-soft:#e6f6f4;
+    --warn:#c2410c; --warn-soft:#fff2ea; --accent:#1d4ed8;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","Microsoft YaHei","PingFang SC","Hiragino Sans GB",sans-serif;
+    line-height:1.75;-webkit-font-smoothing:antialiased}
+  .wrap{max-width:940px;margin:0 auto;padding:48px 24px 80px}
+  header.hero{background:linear-gradient(135deg,#0f9d8f 0%,#0d7fb8 100%);
+    color:#fff;border-radius:18px;padding:38px 34px;margin-bottom:32px;
+    box-shadow:0 10px 30px rgba(15,157,143,.18)}
+  header.hero h1{margin:0 0 10px;font-size:29px;letter-spacing:.5px}
+  header.hero p{margin:0;opacity:.93;font-size:15px}
+  .badges{margin-top:18px;display:flex;flex-wrap:wrap;gap:8px}
+  .badge{background:rgba(255,255,255,.18);border:1px solid rgba(255,255,255,.3);
+    padding:5px 12px;border-radius:999px;font-size:12.5px}
+  h2{font-size:21px;margin:38px 0 14px;padding-left:12px;border-left:4px solid var(--brand)}
+  h3{font-size:16px;margin:24px 0 10px;color:var(--brand)}
+  p{margin:10px 0}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:14px;
+    padding:22px 24px;margin:16px 0}
+  .links{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:12px;margin-top:6px}
+  .link{display:block;background:var(--card);border:1px solid var(--line);border-radius:12px;
+    padding:16px 18px;text-decoration:none;color:var(--ink)}
+  .link:hover{border-color:var(--brand);background:var(--brand-soft)}
+  .link b{display:block;font-size:14px;margin-bottom:4px}
+  .link span{font-size:12.5px;color:var(--sub);word-break:break-all}
+  table{width:100%;border-collapse:collapse;margin:14px 0;font-size:13.5px;background:var(--card)}
+  th,td{border:1px solid var(--line);padding:9px 12px;text-align:left;vertical-align:top}
+  th{background:#eef4f7;font-weight:600;white-space:nowrap}
+  td code, p code, li code{background:#eef4f7;padding:1px 6px;border-radius:4px;
+    font-family:ui-monospace,Consolas,monospace;font-size:12.5px}
+  ul,ol{margin:10px 0;padding-left:22px}
+  li{margin:5px 0}
+  .note{background:var(--warn-soft);border-left:4px solid var(--warn);
+    padding:12px 16px;border-radius:8px;margin:14px 0;font-size:14px}
+  .ok{background:var(--brand-soft);border-left:4px solid var(--brand);
+    padding:12px 16px;border-radius:8px;margin:14px 0;font-size:14px}
+  .kv{display:grid;grid-template-columns:120px 1fr;gap:6px 14px;font-size:14px}
+  .kv div:nth-child(odd){color:var(--sub)}
+  footer{margin-top:48px;padding-top:20px;border-top:1px solid var(--line);
+    color:var(--sub);font-size:12.5px;text-align:center}
+  .tag{display:inline-block;background:#eef4f7;color:var(--sub);
+    padding:2px 9px;border-radius:6px;font-size:12px;margin-right:6px}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header class="hero">
+  <h1>SeekMeal · 智能饮食健康助手</h1>
+  <p>从模块确立到公网部署的完整过程记录 —— 需求拆解、数据获取、算法选型、开源借鉴、前后端开发与最终呈现</p>
+  <div class="badges">
+    <span class="badge">Python 3.13 · FastAPI</span>
+    <span class="badge">27 项单元测试全通过</span>
+    <span class="badge">已部署上线</span>
+    <span class="badge">2026-10-13</span>
+  </div>
+</header>
+
+<h2>0. 交付总览</h2>
+<div class="links">
+  <a class="link" href="https://seekmeal.app.workbuddy.host/" target="_blank">
+    <b>🌐 线上可用网址</b>
+    <span>https://seekmeal.app.workbuddy.host/</span>
+  </a>
+  <a class="link" href="https://github.com/KianLLLIU/seekmeal" target="_blank">
+    <b>📦 GitHub 仓库（公开）</b>
+    <span>https://github.com/KianLLLIU/seekmeal</span>
+  </a>
+  <a class="link">
+    <b>💻 桌面本地程序</b>
+    <span>C:\Users\Kevin L\Desktop\SeekMeal\ —— 双击 start.bat 即可运行</span>
+  </a>
+</div>
+<div class="kv" style="margin-top:18px">
+  <div>核心代码</div><div>12 个 Python 模块，营养/推荐/排餐核心零第三方依赖</div>
+  <div>数据规模</div><div>100 条中文食物 + 22 道中文菜谱（演示数据）</div>
+  <div>测试</div><div>27 项 unittest，覆盖公式、解析、核算、推荐、排餐</div>
+  <div>提交历史</div><div>5 次提交：初始 → 枚举对齐 → 三处修复 → 清理 → 部署上线</div>
+</div>
+
+<h2>1. 功能模块的确立</h2>
+<p>项目启动时先做了模块划分，而不是直接写代码。最初的方案是 <b>8 个模块、分 4 层</b>：用户画像与代谢引擎、多模态饮食记录、食物成分与营养核算、菜谱与食物推荐、膳食计划与排餐、健康评估与风险预警、可视化与反馈闭环、营养知识问答 Agent。</p>
+<p>进入 MVP 阶段时做了取舍，<b>砍掉三个、聚焦五个</b>：</p>
+<table>
+  <tr><th>模块</th><th>去留</th><th>理由</th></tr>
+  <tr><td>代谢引擎（BMR/TDEE/宏量）</td><td>✅ 做</td><td>整个系统的地基，所有目标值从它派生</td></tr>
+  <tr><td>中文食物库 + 自然语言解析</td><td>✅ 做</td><td>中文交互的核心差异点，不能照搬 USDA</td></tr>
+  <tr><td>营养核算与达标评估</td><td>✅ 做</td><td>用户每天真正会看的界面</td></tr>
+  <tr><td>菜谱推荐 + 三餐排餐</td><td>✅ 做</td><td>从"记录"走向"建议"的关键一步</td></tr>
+  <tr><td>网页界面 + API</td><td>✅ 做</td><td>决定这个东西能不能演示、能不能给人用</td></tr>
+  <tr><td>拍照估卡（多模态）</td><td>❌ 砍</td><td>需训练数据与目标检测模型，开源方案误差 20–30%，MVP 阶段投入产出比太低</td></tr>
+  <tr><td>体重趋势可视化</td><td>⚠️ 只留算法</td><td>EMA 与卡尔曼滤波已实现，图表界面留到 V2</td></tr>
+  <tr><td>知识问答 Agent（RAG）</td><td>❌ 砍</td><td>需要向量库与权威指南语料，且存在医疗建议合规风险</td></tr>
+</table>
+<div class="note"><b>一条贯穿全程的原则：所有数值必须由确定性代码计算，大语言模型不参与任何数字运算。</b> LLM 只负责组织语言、解释结果。营养数字一旦算错，用户信任立刻归零，而这类错误还极难定位。</div>
+
+<h2>2. 资料的获取</h2>
+<h3>2.1 营养数据来源</h3>
+<ul>
+  <li><b>《中国食物成分表（第 6 版）》</b>：中文食物的权威基准。纸质/电子版有版权，本项目内置的是 100 条<b>手工整理的学习演示数据</b>，部分字段参考常见值，商用需取得授权。</li>
+  <li><b>Open Food Facts</b>（CC0）与 <b>USDA FoodData Central</b>（CC0）：可作为合法的完整数据替代来源，但仍需专业校验与字段清洗。</li>
+  <li><b>Food.com Recipes &amp; Interactions</b>（23 万菜谱 + 100 万交互）：菜谱推荐的语料候选。</li>
+</ul>
+<h3>2.2 数据设计上的关键决策</h3>
+<p>食物条目里加了一个 <code>portions</code> 字段，例如米饭的 <code>{"1碗": 150}</code>。正是它让「一碗米饭」能被直接换算成 150 克，而不要求用户称重——这是中文场景能否好用的分水岭。</p>
+<p>另一个决策：<b>菜谱的营养不硬编码，而是由食材关联食物库自动推导</b>。改食物库，22 道菜的营养自动跟着变，不存在两处数据打架的问题。</p>
+<h3>2.3 规则类资料的调研</h3>
+<p>在评估"能否改成微信小程序"时，专门查证了微信官方规则：医疗服务属于个人主体未开放类目；个人主体无法开通微信支付；小程序主包 2MB 限制模型必须放云端；云开发的 Python 3 只存在于 HTTP 云函数分类下。这些结论直接影响了产品定位——工具属性而非医疗属性。</p>
+
+<h2>3. 算法的应用</h2>
+<table>
+  <tr><th>能力</th><th>算法 / 公式</th><th>说明</th></tr>
+  <tr><td>BMI 与分级</td><td>体重kg / 身高m²，中国切点 18.5 / 24 / 28</td><td>WHO 与中国标准</td></tr>
+  <tr><td>BMR（默认）</td><td>Mifflin-St Jeor：男 10W+6.25H−5A+5，女 −161</td><td>比 Harris-Benedict 更准，当前主流</td></tr>
+  <tr><td>BMR（知体脂率）</td><td>Katch-McArdle：370 + 21.6 × 去脂体重</td><td>健身人群更准</td></tr>
+  <tr><td>TDEE</td><td>BMR × 活动系数（1.2 / 1.375 / 1.55 / 1.725 / 1.9）</td><td>2024 Compendium</td></tr>
+  <tr><td>目标热量</td><td>由 TDEE 与周变化推导，带安全下限（男 1500 / 女 1200 kcal）</td><td>1 kg 体脂 ≈ 7700 kcal</td></tr>
+  <tr><td>宏量分配</td><td>蛋白 1.2–2.0 g/kg → 脂肪 0.8–1.0 g/kg → 碳水吃剩余热量</td><td>顺序固定：先保肌肉，再保激素（WHO TRS 916）</td></tr>
+  <tr><td>血糖负荷</td><td>GL = GI × 碳水g / 100</td><td>GL 比 GI 实用得多</td></tr>
+  <tr><td>体重趋势</td><td>EMA（α=0.15）与一维卡尔曼滤波</td><td>体重日波动可达 ±1kg，不平滑没法看趋势</td></tr>
+  <tr><td>中文食物匹配</td><td>四级降级：精确 → 别名 → 子串 → 模糊</td><td>用 SequenceMatcher + 字符 bigram，不依赖 jieba/sklearn</td></tr>
+  <tr><td>菜谱推荐</td><td>0.6×营养缺口适配 + 0.25×TF-IDF cosine + 0.15×偏好标签</td><td>TF-IDF 自己实现，无第三方依赖</td></tr>
+  <tr><td>三餐排餐</td><td>贪心 + 份量缩放（0.5–2.0×），每餐可配多道菜</td><td>中餐一餐是"主食+菜"的组合，单道菜撑不起一顿</td></tr>
+</table>
+<div class="note"><b>排餐踩过的坑：</b>第一版每餐只选一道菜，结果一日总热量只有 1153 kcal，而目标是 2255——差了一半。改成每餐可配多道菜并加份量缩放后，实测对齐到 1884 / 目标 1882，误差 &lt;1%。</div>
+
+<h2>4. GitHub 开源项目的借鉴</h2>
+<table>
+  <tr><th>项目</th><th>成熟度</th><th>借鉴了什么</th></tr>
+  <tr><td>simonoppowa/OpenNutriTracker</td><td>2.5k+ stars，已上架双端</td><td><b>公式溯源做法</b>——每个公式标注出处（IOM 2005 / WHO TRS 916 / 2024 Compendium）。本项目把它落到代码里：每个公式函数的 docstring 都标了来源</td></tr>
+  <tr><td>Sanotsu/china-food-composition-data</td><td>中文成分表整理</td><td>《中国食物成分表》第 6 版已转 JSON/SQLite 并附 GI 数据；本项目内置 100 条为精简演示版，正式使用应换它的全量数据</td></tr>
+  <tr><td>slimane-lakehal/calorie_tracker</td><td>Python CLI，结构完整</td><td>模块划分：BMR/TDEE、食物库、饮食记录、体重追踪如何拆分</td></tr>
+  <tr><td>CheeChoong14/Food-Recipe-Recommender-System</td><td>FastAPI + React</td><td>TF-IDF + cosine 的内容过滤思路，本项目用无依赖方式复刻</td></tr>
+  <tr><td>Anduin2017/HowToCook</td><td>大规模中文菜谱</td><td>菜谱冷启动语料来源</td></tr>
+  <tr><td>Decade-qiu/CookHero</td><td>全栈 + RAG</td><td>V2 参考：FastAPI + React + PostgreSQL + Milvus 的架构</td></tr>
+  <tr><td>RitamRixx/NutriGen_AI</td><td>LangGraph 流程</td><td>V2 参考：画像收集 → 指标计算 → RAG → 生成餐单</td></tr>
+  <tr><td>WUT-IDEA/MealRec</td><td>组合推荐</td><td>V2 参考：把"一餐多道菜"建模为 bundle 推荐</td></tr>
+</table>
+
+<h2>5. 后端与前端的开发</h2>
+<h3>5.1 后端（Python）</h3>
+<p>目录结构：<code>formulas.py</code>（代谢与营养公式）、<code>food_db.py</code>（中文食物库与自然语言解析）、<code>analyzer.py</code>（核算、达标评估、风险规则）、<code>recommend.py</code>（推荐）、<code>planner.py</code>（排餐与采购清单）、<code>cli.py</code>（中文命令行）、<code>api.py</code>（FastAPI）。核心五个模块只用标准库，装不装依赖都能跑。</p>
+<p>API 设计上，<code>GET /</code> 直接返回网页，让页面和接口<b>同源</b>——这个决定在后面部署时省掉了跨域的一堆麻烦。</p>
+
+<h3>5.2 前端（原生 HTML/CSS/JS）</h3>
+<p>单文件、零构建、不引任何 CDN 资源，离线双击也能开。三个核心面板：身体档案（算 BMR/TDEE/宏量）、饮食分析（中文文本 → 营养汇总与达标评估）、一日排餐（三餐 + 采购清单）。服务未启动时会给出中文降级提示而不是白屏，底部常驻免责声明。</p>
+
+<h3>5.3 交付打包</h3>
+<ul>
+  <li>桌面完整程序 <code>C:\Users\Kevin L\Desktop\SeekMeal\</code>，双击 <code>start.bat</code> 出菜单：命令行 / 启网页 / 跑测试 / 打开方案文档</li>
+  <li>启动器按 <code>py -3</code> → <code>python</code> → 交付环境解释器三级降级找 Python；中文菜单全部用 <code>\uXXXX</code> 转义交给 Python 打印，配 <code>chcp 65001</code>，任何代码页下都不乱码</li>
+  <li>额外打包 <code>SeekMeal.zip</code>（71 KB）便于分享</li>
+</ul>
+
+<h2>6. 测试、验收与三个真 Bug</h2>
+<p>27 项单元测试全通过。但真正暴露问题的不是单测，而是<b>端到端实跑</b>——起真实服务打真实请求。三个 Bug 都是这么发现的，看代码一个也看不出来：</p>
+<div class="card">
+  <p><b>Bug 1 · 活动水平枚举不一致</b><br>网页下拉框用 <code>active</code>/<code>very_active</code>，后端只认 <code>sedentary/light/moderate/high/very_high</code>，选到那两档直接 400，功能不可用。</p>
+  <p><b>Bug 2 · 减脂算成增肥</b>（最严重）<br><code>weekly_delta_kg</code> 约定"正数增重、负数减重"，但用户在网页选「减脂」再填「每周 0.4kg」，算出 3073 kcal，比 TDEE 2633 高出 440——等于让用户增肥。改为由 <code>goal</code> 决定方向后，正确输出 2193 kcal。<br><span class="tag">教训</span>单测只验证数学自洽，验证不了语义方向。这类引擎必须专门加"方向断言"。</p>
+  <p><b>Bug 3 · 中文输入静默丢数据</b><br>分隔正则要求两个以上空格，「一碗米饭 鸡胸肉100g」只记了鸡胸肉，米饭被丢掉；另一处「150g 鸡胸肉」被切成两段，克重丢成默认 100g。最终改为"空格后跟非数字才切分"＋数量片段合并。</p>
+</div>
+
+<h2>7. 部署与最终呈现</h2>
+<p>部署到公网需要解决三件事：</p>
+<ol>
+  <li><b>前端 API 地址必须同源自适应</b>：原来写死 <code>http://127.0.0.1:8000</code>，部署后用户浏览器会把请求打到"自己电脑的 127.0.0.1"，页面能开但功能全废。改为 <code>file://</code> 打开时走本机、<code>http(s)://</code> 打开时走相对路径。</li>
+  <li><b>新增云端启动入口 <code>server.py</code></b>：监听环境变量 <code>PORT</code>、绑定 <code>0.0.0.0</code>。实测 <code>PORT=8011</code> 时服务只监听 8011，8000 无服务，确认环境变量生效。</li>
+  <li><b>依赖与启动命令</b>：<code>pip install -r requirements.txt</code> → <code>python server.py</code>。</li>
+</ol>
+<div class="ok"><b>线上实测结果（公网真实请求）：</b><br>
+  · <code>GET /</code> → 200，返回 37,201 字节网页<br>
+  · 身体档案 → BMI 22.9、BMR 1698.8、TDEE 2633.1、减脂目标 2193.1 kcal<br>
+  · 饮食分析「一碗米饭 鸡胸肉100g」→ 正确解析 2 条（米饭 150g + 鸡胸肉 100g）<br>
+  · 一日排餐 → 早餐燕麦牛奶早餐杯 566 kcal、午餐蛋炒饭 753 kcal、晚餐香煎三文鱼配糙米饭 565 kcal，合计 1884 kcal，采购清单 10 项<br>
+  · 风险提示正常触发："膳食纤维仅 0.4 g，建议增加蔬菜、全谷物与豆类"
+</div>
+
+<h2>8. 已知限制</h2>
+<ol>
+  <li><b>内置数据是演示数据</b>。100 条食物、22 道菜谱，未覆盖品牌差异、烹饪损耗、生熟重换算与个体差异，<b>严禁用于实际健康决策</b>。</li>
+  <li><b>排餐是贪心算法</b>。热量通常接近目标，但脂肪或碳水仍可能偏离 20–30%，生产版本应换整数规划。</li>
+  <li><b>状态存内存</b>。云端服务重启后记录会清空，没有账号、数据库与持久化。</li>
+  <li><b>自然语言解析范围有限</b>。能识别内置名称、别名、克重与常见量词，不是通用语言模型。</li>
+  <li><b>无拍照识别、无协同过滤</b>，这两块都在 V2 范围。</li>
+</ol>
+
+<h2>9. 下一步建议</h2>
+<ul>
+  <li>把食物库换成合法授权的全量数据（Sanotsu 项目或自建校验表），这是从"演示"走向"可用"的第一步</li>
+  <li>排餐改用整数规划，把宏量偏差压下来</li>
+  <li>加 SQLite 持久化 + 简单账号，让记录不再丢失</li>
+  <li>若要真做微信小程序：先确认「工具 &gt; 信息查询」类目可选，产品文案避开治疗/诊断/疗效，个人主体不做任何支付</li>
+</ul>
+
+<footer>
+  SeekMeal · 智能饮食健康助手 —— 项目完成报告<br>
+  本工具仅用于饮食记录与营养参考，不构成医疗建议，不能替代医生诊疗。
+</footer>
+
+</div>
+</body>
+</html>
