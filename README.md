@@ -8,6 +8,7 @@
 
 - 身体档案：计算 BMI、BMR、TDEE、目标热量及蛋白质/脂肪/碳水/膳食纤维目标
 - 中文饮食记录：识别“一碗米饭、鸡胸肉100g”等自然语言和常见份量
+- **对话助手**：一句话完成建档、记餐、查询、推荐与排餐。模型只负责把中文翻译成意图与参数，全部数值仍由确定性引擎计算
 - 营养评估：汇总热量与宏量营养素，显示达标状态及规则化风险提示
 - 菜谱推荐：以无第三方依赖的字符 bigram TF-IDF 结合营养缺口进行排序
 - 一日排餐：生成早餐、午餐、晚餐及合并后的采购清单
@@ -31,7 +32,9 @@ SeekMeal/
 ├── env.bat                   # 在当前终端激活专用 Python 环境
 ├── tools/
 │   ├── setup_env.bat         # 一键配置环境（双击即可）
-│   └── setup_env.py          # 环境引擎：创建 / 修复 / 自检
+│   ├── setup_env.py          # 环境引擎：创建 / 修复 / 自检
+│   ├── llm_check.py          # 合成数据 + 规则基线自检
+│   └── chat_test.py          # 对话链路端到端联调
 ├── diet_assistant/
 │   ├── __init__.py
 │   ├── formulas.py           # 代谢与营养公式
@@ -40,11 +43,22 @@ SeekMeal/
 │   ├── recommend.py          # TF-IDF 菜谱推荐
 │   ├── planner.py            # 三餐排餐与采购清单
 │   ├── cli.py                # 中文命令行
-│   ├── api.py                # FastAPI 接口
+│   ├── api.py                # FastAPI 接口（含 /api/chat）
 │   ├── data/
 │   │   ├── foods_zh.json     # 100 条演示食物
 │   │   └── recipes_zh.json   # 22 道演示菜谱
 │   └── tests/test_core.py
+├── llm/                      # 领域小模型模块，详见 llm/README.md
+│   ├── schema.py             # 意图与工具 schema（单一真相）
+│   ├── prompt.py             # 理解层提示词
+│   ├── backend.py            # 规则 / OpenAI 兼容 / llama.cpp 四种后端
+│   ├── tools.py              # 工具层（计算层，不依赖 FastAPI）
+│   ├── router.py             # 调度器与数字一致性校验
+│   ├── synth.py              # 训练数据合成器
+│   ├── evaluate.py           # 自动评估
+│   ├── service.py            # 接入 Web 服务
+│   ├── lora_sft.yaml         # QLoRA 微调配置
+│   └── data/                 # 数据集（train 12233 / valid 1525 / test 1540）
 ├── web/index.html            # 单文件原生网页
 └── docs/技术方案.html
 ```
@@ -191,9 +205,12 @@ SEEKMEAL_ALLOWED_ORIGINS="https://your-name.github.io" \
 
 使用顺序：
 
-1. 在“身体档案”中计算并保存目标；
-2. 在“饮食分析”中提交中文饮食文本；
+1. 想省事：在「对话助手」里直接说一句话，例如“中午吃了一碗米饭和 150g 鸡胸肉”；
+2. 想看清每个数值的来源：在“身体档案”中计算并保存目标 → 在“饮食分析”中提交中文饮食文本；
 3. 查看营养汇总和达标评估，或生成一日排餐与采购清单。
+
+对话助手与表单**共用同一份记录**：在聊天里记的一餐会立刻出现在「饮食分析」里，反之亦然。
+默认不接模型，走内置的确定性规则解析；要接本地小模型见 [llm/README.md](llm/README.md)。
 
 ### 5. API 模式
 
@@ -212,6 +229,36 @@ python -m unittest discover -s diet_assistant/tests -t .
 ```
 
 当前测试集包含 27 项测试，覆盖 BMR/TDEE 已知值、宏量自洽性、中文食物名与份量解析、营养汇总、推荐排序和排餐份量缩放。
+
+### 7. 对话助手与领域小模型
+
+「对话助手」标签页调的是 `POST /api/chat`。它背后是一条**模型做翻译、代码做计算**的链路：
+
+```text
+一句话 → 理解层（模型只输出一行 JSON）→ 参数校验 → 确定性引擎算数值 → 模板作答 → 数字一致性校验
+```
+
+表达层会检查回答里每个数字是否能在这句话的引擎结果里找到出处，找不到就判定为编造并回退模板。
+因此即便模型只有 0.6B，报出来的热量也不会错。
+
+默认**不接模型**，走内置规则解析。要接本地小模型：
+
+```bash
+# LM Studio / Ollama / vLLM / llama.cpp server 任意一个
+SEEKMEAL_LLM_BACKEND=openai SEEKMEAL_LLM_MODEL=qwen3-0.6b \
+SEEKMEAL_LLM_BASE_URL=http://127.0.0.1:1234/v1 \
+python -m uvicorn diet_assistant.api:app --port 8000
+```
+
+模型后端初始化失败会自动降级到规则后端，并在 `/health` 里说明原因——模型是加分项，不是命门。
+
+训练数据不需要人工标注：用引擎自己造。15000 条样本约 0.3 秒生成完毕，且「答案」是意图与参数，
+数据集里不含任何需要模型记住的数值。完整说明、评估指标与 QLoRA 配方见 **[llm/README.md](llm/README.md)**。
+
+```bash
+python tools/llm_check.py --total 3000                                        # 数据 + 规则基线自检
+python -m llm.evaluate --backend rule --data llm/data/seekmeal_test.json      # 单跑评估
+```
 
 ## 公式与数据来源
 
@@ -300,6 +347,7 @@ db = FoodDB.load("path/to/validated_foods.json")
 6. **网页面向本机单用户演示。** 没有账号、鉴权、数据库、隐私隔离、HTTPS 或公网部署加固。
 7. **无图像识别与协同过滤。** 拍照估卡和多人行为推荐均不在当前版本范围内。
 8. **不适用于特殊人群自行决策。** 孕妇、儿童、慢性病患者和有进食障碍史的人群应遵医嘱。
+9. **小模型尚未微调。** 训练数据（1.5 万条）与 QLoRA 配方已就绪，但当前仓库里没有训练好的权重；`/api/chat` 默认走规则解析。规则解析在合成语料上满分，真实用户说法多样时会明显掉分，这正是需要上模型的原因。
 
 ## 免责声明
 

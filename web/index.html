@@ -503,6 +503,148 @@
       .tabs { border-radius: 13px; }
       .tab { padding-inline: 14px; }
     }
+
+    /* ---------- 对话助手 ---------- */
+    .chat-layout {
+      display: grid;
+      grid-template-columns: minmax(0, 1.42fr) minmax(272px, 0.58fr);
+      gap: 22px;
+      align-items: start;
+    }
+
+    .chat-card { display: flex; flex-direction: column; }
+
+    .chat-log {
+      display: flex;
+      flex-direction: column;
+      gap: 13px;
+      max-height: min(56vh, 520px);
+      min-height: 240px;
+      overflow-y: auto;
+      margin-bottom: 4px;
+      padding: 2px 4px 2px 2px;
+      scrollbar-width: thin;
+    }
+
+    .chat-row { display: flex; }
+    .chat-row.user { justify-content: flex-end; }
+
+    .bubble {
+      max-width: 88%;
+      border: 1px solid var(--line);
+      border-radius: 16px 16px 16px 6px;
+      background: var(--surface-soft);
+      padding: 11px 14px;
+      font-size: 14px;
+      line-height: 1.62;
+      white-space: pre-wrap;
+      overflow-wrap: anywhere;
+    }
+
+    .chat-row.user .bubble {
+      border-color: transparent;
+      border-radius: 16px 16px 6px 16px;
+      background: linear-gradient(145deg, var(--primary), var(--primary-dark));
+      color: #fff;
+    }
+
+    .bubble.system {
+      border-style: dashed;
+      background: #fff;
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .chat-tags { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 9px; }
+
+    .tag {
+      border: 1px solid rgba(8, 127, 91, 0.18);
+      border-radius: 999px;
+      background: var(--primary-soft);
+      padding: 2px 9px;
+      color: var(--primary-dark);
+      font-size: 11px;
+      font-weight: 600;
+    }
+
+    .tag.neutral { border-color: var(--line); background: #f1f5f4; color: var(--muted); }
+    .tag.warn { border-color: rgba(161, 92, 0, 0.22); background: var(--warning-soft); color: var(--warning); }
+    .tag.bad { border-color: rgba(194, 65, 58, 0.22); background: var(--danger-soft); color: var(--danger); }
+
+    .chat-json { margin-top: 9px; }
+    .chat-json summary { cursor: pointer; color: var(--muted); font-size: 12px; }
+    .chat-json pre {
+      margin: 8px 0 0;
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      background: #fff;
+      padding: 10px 11px;
+      color: #33463f;
+      font-size: 12px;
+      line-height: 1.55;
+      overflow-x: auto;
+      white-space: pre-wrap;
+      overflow-wrap: anywhere;
+    }
+
+    .chat-suggest { display: flex; flex-wrap: wrap; gap: 7px; margin-bottom: 11px; }
+
+    .chip {
+      border: 1px dashed #c6d5d0;
+      border-radius: 999px;
+      background: #fff;
+      padding: 5px 11px;
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    .chip:hover { border-color: var(--primary); color: var(--primary-dark); }
+
+    .chat-input-row { display: flex; gap: 10px; align-items: flex-end; }
+
+    .chat-input-row textarea {
+      flex: 1;
+      min-height: 66px;
+      max-height: 168px;
+    }
+
+    .chat-toolbar {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 9px;
+      margin-top: 12px;
+    }
+
+    .chat-toolbar label { margin: 0; }
+    .chat-toolbar input { width: auto; flex: 1; min-width: 132px; }
+    .chat-toolbar .button { min-height: 38px; padding: 7px 14px; font-size: 13px; }
+
+    .chat-steps { margin: 0; padding-left: 19px; color: #4a5f57; font-size: 13px; }
+    .chat-steps li + li { margin-top: 9px; }
+    .chat-steps strong { color: var(--text); }
+
+    .typing { display: inline-flex; gap: 4px; align-items: center; }
+    .typing i {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: var(--primary);
+      opacity: 0.45;
+      animation: blink 1.05s infinite ease-in-out;
+    }
+    .typing i:nth-child(2) { animation-delay: 0.18s; }
+    .typing i:nth-child(3) { animation-delay: 0.36s; }
+
+    @keyframes blink {
+      0%, 100% { opacity: 0.28; transform: translateY(0); }
+      50% { opacity: 1; transform: translateY(-2px); }
+    }
+
+    @media (max-width: 900px) {
+      .chat-layout { grid-template-columns: 1fr; }
+      .chat-log { max-height: 46vh; }
+    }
   </style>
 </head>
 <body>
@@ -529,18 +671,75 @@
         <p class="hero-copy">从身体目标、中文饮食记录到一日三餐规划，所有营养数值都由可追溯公式计算，不由生成式模型猜测。</p>
       </div>
       <aside class="hero-note">
-        <strong>使用顺序</strong>
-        先保存身体档案，再记录饮食或生成餐单。页面数据由本机 API 计算，刷新 API 服务后内存记录会清空。
+        <strong>两种用法</strong>
+        想省事就直接在「对话助手」里说一句话，建档、记餐、查询一步到位；想看清每个数值的来源，就用后面的表单。两者共用同一份记录。页面数据由本机 API 计算，刷新 API 服务后内存记录会清空。
       </aside>
     </section>
 
     <nav class="tabs" role="tablist" aria-label="核心功能">
-      <button class="tab active" type="button" role="tab" aria-selected="true" data-tab="profile">身体档案与目标</button>
+      <button class="tab active" type="button" role="tab" aria-selected="true" data-tab="chat">对话助手</button>
+      <button class="tab" type="button" role="tab" aria-selected="false" data-tab="profile">身体档案与目标</button>
       <button class="tab" type="button" role="tab" aria-selected="false" data-tab="analysis">饮食分析</button>
       <button class="tab" type="button" role="tab" aria-selected="false" data-tab="plan">一日排餐</button>
     </nav>
 
-    <section id="profile" class="panel active" aria-labelledby="profile-heading">
+    <section id="chat" class="panel active" aria-labelledby="chat-heading">
+      <div class="chat-layout">
+        <article class="card chat-card">
+          <div class="section-title">
+            <div>
+              <h2 id="chat-heading">对话助手</h2>
+              <p>说一句话就能建档、记录、查询与排餐。数值全部由确定性引擎计算。</p>
+            </div>
+            <span class="step-number">AI</span>
+          </div>
+
+          <div id="chat-log" class="chat-log" aria-live="polite" aria-label="对话记录"></div>
+
+          <form id="chat-form">
+            <div class="chat-suggest" id="chat-suggest">
+              <button class="chip" type="button" data-say="男 175 厘米 70 公斤 22 岁 中等活动量，想减脂每周 0.5 公斤">建个档案</button>
+              <button class="chip" type="button" data-say="中午吃了一碗米饭和 150g 鸡胸肉">记一餐</button>
+              <button class="chip" type="button" data-say="我今晚还能吃多少">还剩多少</button>
+              <button class="chip" type="button" data-say="鸡胸肉 100 克有多少热量">查食物</button>
+              <button class="chip" type="button" data-say="有什么高蛋白的菜推荐">推荐菜谱</button>
+              <button class="chip" type="button" data-say="帮我排一下明天的三餐">排一日三餐</button>
+              <button class="chip" type="button" data-say="今早称了 78.5 公斤">记体重</button>
+              <button class="chip" type="button" data-say="我有糖尿病，该怎么吃">医疗问题</button>
+            </div>
+            <div class="chat-input-row">
+              <textarea id="chat-text" name="text" maxlength="500"
+                        placeholder="例如：中午吃了一碗米饭和 150g 鸡胸肉" required></textarea>
+              <button class="button primary" type="submit">发送</button>
+            </div>
+            <div class="chat-toolbar">
+              <label for="chat-user">本地用户标识</label>
+              <input id="chat-user" name="user_id" value="default" maxlength="40" autocomplete="off" required>
+              <button id="chat-reset" class="button secondary" type="button">清空对话</button>
+            </div>
+            <div id="chat-message" class="message" role="status" aria-live="polite"></div>
+          </form>
+        </article>
+
+        <article class="card" aria-live="polite">
+          <div class="section-title">
+            <div>
+              <h2>它是怎么工作的</h2>
+              <p>模型做翻译，代码做计算。</p>
+            </div>
+          </div>
+          <ol class="chat-steps">
+            <li><strong>理解</strong>：模型只输出一行 JSON，指出你要干什么、参数是多少。</li>
+            <li><strong>计算</strong>：热量、营养素、推荐与排餐全部由确定性公式算出。</li>
+            <li><strong>表达</strong>：模板把结果说成人话；回答里一旦出现引擎没算过的数字，直接判定为编造并回退。</li>
+          </ol>
+          <div id="chat-backend" class="pill-row" style="margin-top:16px"></div>
+          <p class="hint">涉及疾病、用药、孕期哺乳、儿童或极端减肥手段的问题会被明确拒答，并建议就医。本工具只做饮食记录与营养参考。</p>
+        </article>
+      </div>
+    </section>
+
+    <section id="profile" class="panel" aria-labelledby="profile-heading">
       <div class="layout">
         <article class="card">
           <div class="section-title">
@@ -880,6 +1079,13 @@
       refreshSummary: document.getElementById("refresh-summary"),
       goal: document.getElementById("goal"),
       weeklyDelta: document.getElementById("weekly-delta"),
+      chatForm: document.getElementById("chat-form"),
+      chatLog: document.getElementById("chat-log"),
+      chatText: document.getElementById("chat-text"),
+      chatUser: document.getElementById("chat-user"),
+      chatReset: document.getElementById("chat-reset"),
+      chatSuggest: document.getElementById("chat-suggest"),
+      chatBackend: document.getElementById("chat-backend"),
     };
 
     function escapeHtml(value) {
@@ -905,8 +1111,9 @@
 
     function syncUserId(userId) {
       const safeId = normalizeUserId(userId);
-      ["profile-user", "meal-user", "plan-user"].forEach((id) => {
-        document.getElementById(id).value = safeId;
+      ["profile-user", "meal-user", "plan-user", "chat-user"].forEach((id) => {
+        const node = document.getElementById(id);
+        if (node) node.value = safeId;
       });
       // 手填用户名后刷新不应被生成值覆盖，因此同步持久化本机标识。
       try {
@@ -973,6 +1180,19 @@
       return payload;
     }
 
+    function renderBackendInfo(info) {
+      if (!elements.chatBackend) return;
+      const kind = String((info && info.kind) || "unavailable");
+      const label = kind === "rule"
+        ? "解析方式：确定性规则"
+        : kind === "unavailable"
+          ? "解析方式：不可用"
+          : `解析方式：本地模型（${escapeHtml(info.name || kind)}）`;
+      const model = info && info.model ? `<span class="pill">模型：${escapeHtml(info.model)}</span>` : "";
+      const note = info && info.note ? `<span class="pill">${escapeHtml(info.note)}</span>` : "";
+      elements.chatBackend.innerHTML = `<span class="pill">${label}</span>${model}${note}`;
+    }
+
     async function checkHealth(silent = false) {
       elements.serviceChip.dataset.state = "checking";
       elements.serviceText.textContent = "正在连接服务";
@@ -980,12 +1200,14 @@
         const health = await apiRequest("/health", { method: "GET" });
         elements.serviceChip.dataset.state = "ok";
         elements.serviceText.textContent = `服务已连接 · ${formatNumber(health.foods)} 种食物`;
+        renderBackendInfo(health.llm);
       } catch (error) {
         elements.serviceChip.dataset.state = "error";
         elements.serviceText.textContent = "服务未启动";
+        renderBackendInfo({ kind: "unavailable", note: "对话与表单都需要本机 API 服务" });
         // 轮询失败时不覆盖用户正在看的提示
         if (!silent) {
-          ["profile-message", "meal-message", "plan-message"].forEach((id) => {
+          ["profile-message", "meal-message", "plan-message", "chat-message"].forEach((id) => {
             showMessage(id, error.message, "error");
           });
         }
@@ -1253,6 +1475,233 @@
       }
     });
 
+    // ------------------------------------------------------------------
+    // 对话助手
+    //
+    // 与表单共用同一份记录：后端把 Session 直接绑到 api 层的 DayLog / weights，
+    // 所以这里不需要做任何数据合并，只要在写入后刷新一下相关面板。
+    // ------------------------------------------------------------------
+
+    const CHAT_PATH_LABEL = {
+      rule: "规则解析",
+      model: "小模型解析",
+      "model+paraphrase": "小模型解析 · 已润色",
+      "rule+paraphrase": "规则解析 · 已润色",
+      fallback: "模型输出异常 · 规则兜底",
+      clarify: "需要补充信息",
+      error: "未执行",
+    };
+
+    //: 这些意图会改动记录或档案，命中后顺手刷新对应的面板
+    const CHAT_WRITES_DATA = new Set(["set_profile", "log_meal", "delete_log", "log_weight"]);
+
+    function chatAppend(role, text, options = {}) {
+      const row = document.createElement("div");
+      row.className = `chat-row ${role}`;
+      const bubble = document.createElement("div");
+      bubble.className = options.bubbleClass ? `bubble ${options.bubbleClass}` : "bubble";
+      if (options.pending) {
+        bubble.innerHTML = '<span class="typing"><i></i><i></i><i></i></span>';
+      } else {
+        bubble.textContent = text;
+      }
+      row.appendChild(bubble);
+      elements.chatLog.appendChild(row);
+      elements.chatLog.scrollTop = elements.chatLog.scrollHeight;
+      return bubble;
+    }
+
+    function appendChatTags(bubble, tags) {
+      if (!tags || !tags.length) return;
+      const wrap = document.createElement("div");
+      wrap.className = "chat-tags";
+      tags.forEach(([label, tone]) => {
+        const span = document.createElement("span");
+        span.className = tone ? `tag ${tone}` : "tag";
+        span.textContent = label;
+        wrap.appendChild(span);
+      });
+      bubble.appendChild(wrap);
+    }
+
+    function appendChatDetail(bubble, text) {
+      const box = document.createElement("details");
+      box.className = "chat-json";
+      const summary = document.createElement("summary");
+      summary.textContent = "查看解析结果";
+      const pre = document.createElement("pre");
+      pre.textContent = text;
+      box.append(summary, pre);
+      bubble.appendChild(box);
+    }
+
+    function fillChatBubble(bubble, text, tags, detail) {
+      bubble.textContent = text;
+      appendChatTags(bubble, tags);
+      if (detail) appendChatDetail(bubble, detail);
+      elements.chatLog.scrollTop = elements.chatLog.scrollHeight;
+    }
+
+    function chatGreet() {
+      elements.chatLog.innerHTML = "";
+      chatAppend("bot", "你好，我是 SeekMeal 的饮食助手。" +
+        "可以直接说「中午吃了一碗米饭和 150g 鸡胸肉」，或者问「我今晚还能吃多少」。\n" +
+        "涉及疾病、用药和孕期哺乳的问题我会明确婉拒，并建议你咨询医生。");
+    }
+
+    async function sendChat(rawText) {
+      const text = String(rawText || "").trim();
+      if (!text) return;
+      const userId = elements.chatUser.value.trim() || currentUserId();
+
+      clearMessage("chat-message");
+      syncUserId(userId);
+      chatAppend("user", text);
+      const pending = chatAppend("bot", "", { pending: true });
+      chatBusy(true);
+
+      try {
+        const data = await apiRequest("/api/chat", {
+          method: "POST",
+          body: JSON.stringify({ text, user_id: userId }),
+        });
+
+        const tags = [];
+        if (data.intent) tags.push([data.intent, ""]);
+        if (data.path) tags.push([CHAT_PATH_LABEL[data.path] || data.path, "neutral"]);
+        if (data.numbers_ok === false) tags.push(["已拦截编造数字", "warn"]);
+        if (data.error) tags.push([String(data.error).slice(0, 44), "bad"]);
+
+        const detail = data.intent
+          ? `意图：${data.intent}\n参数：${JSON.stringify(data.args || {}, null, 1)}`
+          : "";
+        fillChatBubble(pending, data.answer || "（没有返回内容）", tags, detail);
+
+        const note = data.intent === "refuse_safety"
+          ? "已按安全边界婉拒：这类问题请咨询医生或注册营养师。"
+          : "";
+        if (note) showMessage("chat-message", note, "info");
+
+        if (data.intent === "set_profile" && data.args) await syncProfilePanel(data.args);
+        if (CHAT_WRITES_DATA.has(data.intent)) await maybeRefreshAnalysis(userId);
+      } catch (error) {
+        fillChatBubble(pending, error.message, [["请求失败", "bad"]]);
+        showMessage("chat-message", error.message, "error");
+      } finally {
+        chatBusy(false);
+        elements.chatText.focus();
+      }
+    }
+
+    // 只锁「发送」按钮：setBusy 会把表单里所有按钮都写成「处理中…」，
+    // 而这张表单里还有 8 个示例按钮和「清空对话」，一起变灰既难看又没必要。
+    function chatBusy(busy) {
+      const button = elements.chatForm.querySelector('button[type="submit"]');
+      if (button) {
+        button.disabled = busy;
+        if (busy) {
+          if (!button.dataset.label) button.dataset.label = button.textContent;
+          button.textContent = "发送中…";
+        } else if (button.dataset.label) {
+          button.textContent = button.dataset.label;
+          delete button.dataset.label;
+        }
+      }
+      [elements.chatReset, elements.chatText].forEach((node) => {
+        if (node) node.disabled = busy;
+      });
+      elements.chatSuggest.querySelectorAll("button").forEach((chip) => {
+        chip.disabled = busy;
+      });
+    }
+
+    // 对话写入记录后，如果「饮食分析」面板已经渲染过内容，顺手刷新它，
+    // 免得两个面板显示不一致。
+    async function maybeRefreshAnalysis(userId) {
+      if (!elements.analysisResult || elements.analysisResult.classList.contains("empty")) return;
+      try {
+        document.getElementById("meal-user").value = userId;
+        await loadSummary(false, []);
+      } catch (error) {
+        /* 刷新失败不影响对话本身 */
+      }
+    }
+
+    // 对话里建好档案后，把「身体档案」面板一并填上。
+    // 这里刻意复用 POST /api/profile 重新算一遍，而不是拿对话返回的数值直接渲染：
+    // 走同一个接口，两边的口径（供能比、热量下限标记）才完全一致。
+    async function syncProfilePanel(args) {
+      const profile = {
+        user_id: elements.chatUser.value.trim() || currentUserId(),
+        sex: args.sex || "male",
+        weight: Number(args.weight),
+        height: Number(args.height),
+        age: Number(args.age),
+        activity: args.activity || "moderate",
+        goal: args.goal || "maintain",
+        weekly_delta_kg: Number(args.weekly_delta_kg || 0),
+        body_fat_pct: args.body_fat_pct === undefined ? null : args.body_fat_pct,
+      };
+      try {
+        const data = await apiRequest("/api/profile", { method: "POST", body: JSON.stringify(profile) });
+        renderProfile(data);
+        const fill = (id, value) => {
+          const node = document.getElementById(id);
+          if (node && value !== undefined && value !== null) node.value = value;
+        };
+        fill("sex", profile.sex);
+        fill("age", profile.age);
+        fill("height", profile.height);
+        fill("weight", profile.weight);
+        fill("activity", profile.activity);
+        fill("goal", profile.goal);
+        fill("weekly-delta", profile.weekly_delta_kg);
+        fill("body-fat", profile.body_fat_pct);
+        clearMessage("profile-message");
+      } catch (error) {
+        /* 面板同步失败不影响对话本身 */
+      }
+    }
+
+    function initChat() {
+      if (!elements.chatForm) return;
+      chatGreet();
+
+      elements.chatForm.addEventListener("submit", (event) => {
+        event.preventDefault();
+        const text = elements.chatText.value;
+        elements.chatText.value = "";
+        sendChat(text);
+      });
+
+      // Enter 发送，Shift+Enter 换行
+      elements.chatText.addEventListener("keydown", (event) => {
+        if (event.key === "Enter" && !event.shiftKey) {
+          event.preventDefault();
+          if (elements.chatText.value.trim()) elements.chatForm.requestSubmit();
+        }
+      });
+
+      elements.chatSuggest.addEventListener("click", (event) => {
+        const chip = event.target.closest("button[data-say]");
+        if (!chip) return;
+        elements.chatText.value = chip.dataset.say || "";
+        elements.chatForm.requestSubmit();
+      });
+
+      elements.chatReset.addEventListener("click", async () => {
+        const userId = elements.chatUser.value.trim() || currentUserId();
+        try {
+          await apiRequest(`/api/chat/reset?user_id=${encodeURIComponent(userId)}`, { method: "POST" });
+        } catch (error) {
+          /* 服务端清空失败也把本地对话清掉 */
+        }
+        chatGreet();
+        showMessage("chat-message", "对话已清空。饮食记录与身体档案会保留。", "success");
+      });
+    }
+
+    initChat();
     checkHealth();
     // 服务恢复后状态点会自动变绿；轮询为静默模式，不覆盖用户正在看的提示
     setInterval(() => checkHealth(true), 30000);

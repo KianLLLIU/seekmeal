@@ -1,0 +1,377 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SeekMeal · 领域小模型实施方案</title>
+<style>
+  :root{
+    --bg:#eef3f6;--card:#fff;--ink:#132330;--sub:#5b6d7c;--line:#dde6ec;
+    --teal:#0f9d8f;--teal-d:#0b7d72;--blue:#1565c0;--violet:#6d28d9;
+    --amber:#b45309;--rose:#be123c;
+    --teal-soft:#e3f6f3;--blue-soft:#e8f1fc;--violet-soft:#f0eafd;
+    --amber-soft:#fef3e2;--rose-soft:#fdeaef;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);line-height:1.78;
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","Microsoft YaHei","PingFang SC",sans-serif;
+    -webkit-font-smoothing:antialiased}
+  .wrap{max-width:1000px;margin:0 auto;padding:44px 22px 90px}
+  header.hero{position:relative;overflow:hidden;color:#fff;border-radius:20px;
+    padding:42px 36px 36px;margin-bottom:32px;
+    background:linear-gradient(125deg,#0b7d72 0%,#0f9d8f 45%,#1565c0 100%);
+    box-shadow:0 18px 44px rgba(11,125,114,.24)}
+  header.hero::after{content:"";position:absolute;right:-80px;top:-90px;width:300px;height:300px;
+    border-radius:50%;background:radial-gradient(circle,rgba(255,255,255,.2),transparent 68%)}
+  .hero-in{position:relative;z-index:2}
+  .eyebrow{display:inline-block;font-size:12px;letter-spacing:2.6px;text-transform:uppercase;
+    background:rgba(255,255,255,.16);border:1px solid rgba(255,255,255,.32);
+    padding:5px 13px;border-radius:999px;margin-bottom:15px}
+  header.hero h1{margin:0 0 10px;font-size:29px;line-height:1.32}
+  header.hero .lede{margin:0;font-size:14.5px;opacity:.94;max-width:740px}
+  .badges{margin-top:18px;display:flex;flex-wrap:wrap;gap:8px}
+  .badge{background:rgba(255,255,255,.17);border:1px solid rgba(255,255,255,.3);
+    padding:5px 12px;border-radius:999px;font-size:12.5px}
+  h2{font-size:20px;margin:40px 0 13px;padding-left:13px;border-left:4px solid var(--teal);
+    display:flex;align-items:center;gap:10px}
+  h2 .num{font-size:12px;color:var(--teal);font-weight:700;letter-spacing:1px;
+    background:var(--teal-soft);border-radius:6px;padding:3px 8px}
+  h3{font-size:15.5px;margin:24px 0 8px;color:var(--teal-d)}
+  h4{font-size:14px;margin:16px 0 6px}
+  p{margin:9px 0}
+  ul,ol{margin:9px 0;padding-left:22px}
+  li{margin:5px 0}
+  code{background:#e9f0f4;padding:1px 6px;border-radius:4px;
+    font-family:ui-monospace,Consolas,monospace;font-size:12.5px;color:#25404f}
+  pre{background:#1c2b36;color:#d7e4ec;padding:15px 17px;border-radius:10px;
+    overflow-x:auto;font-size:12.3px;line-height:1.62;margin:12px 0;
+    font-family:ui-monospace,Consolas,monospace}
+  pre code{background:none;color:inherit;padding:0}
+  table{width:100%;border-collapse:collapse;margin:13px 0;font-size:13.2px;background:var(--card)}
+  th,td{border:1px solid var(--line);padding:9px 12px;text-align:left;vertical-align:top}
+  th{background:#e8f0f4;font-weight:600;white-space:nowrap}
+  tbody tr:nth-child(even){background:#fafcfd}
+  .note{background:var(--amber-soft);border-left:4px solid var(--amber);padding:13px 17px;
+    border-radius:8px;margin:14px 0;font-size:13.8px}
+  .ok{background:var(--teal-soft);border-left:4px solid var(--teal);padding:13px 17px;
+    border-radius:8px;margin:14px 0;font-size:13.8px}
+  .warn{background:var(--rose-soft);border-left:4px solid var(--rose);padding:13px 17px;
+    border-radius:8px;margin:14px 0;font-size:13.8px}
+  .info{background:var(--blue-soft);border-left:4px solid var(--blue);padding:13px 17px;
+    border-radius:8px;margin:14px 0;font-size:13.8px}
+  .violet{background:var(--violet-soft);border-left:4px solid var(--violet);padding:13px 17px;
+    border-radius:8px;margin:14px 0;font-size:13.8px}
+  .stage{background:linear-gradient(100deg,#f2f8fa,#eaf2f7);border:1px solid var(--line);
+    border-left:4px solid var(--teal);border-radius:12px;padding:14px 18px;margin:24px 0 12px}
+  .stage .st-t{font-size:11.5px;letter-spacing:2px;text-transform:uppercase;color:var(--teal);font-weight:700}
+  .stage .st-h{font-size:16.5px;font-weight:600;margin-top:2px}
+  .stage .st-d{font-size:13px;color:var(--sub);margin-top:3px}
+  .metrics{display:grid;grid-template-columns:repeat(auto-fit,minmax(128px,1fr));gap:11px;margin:16px 0}
+  .metric{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px 12px;text-align:center}
+  .metric .v{font-size:21px;font-weight:700;color:var(--teal-d);font-family:ui-monospace,Consolas,monospace}
+  .metric .k{font-size:11.5px;color:var(--sub);margin-top:3px}
+  .pill{display:inline-block;font-size:11.5px;border-radius:6px;padding:2px 9px;margin-right:6px;
+    background:#e8f0f4;color:var(--sub)}
+  .pill.now{background:var(--teal-soft);color:var(--teal-d)}
+  .pill.next{background:var(--blue-soft);color:var(--blue)}
+  .pill.later{background:var(--violet-soft);color:var(--violet)}
+  footer{margin-top:50px;padding-top:22px;border-top:1px solid var(--line);
+    color:var(--sub);font-size:12.5px;text-align:center}
+  @media (max-width:640px){
+    header.hero{padding:30px 20px}.hero-in h1{font-size:22px}
+    .wrap{padding:24px 13px 60px}table{font-size:12.3px}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header class="hero">
+  <div class="hero-in">
+    <span class="eyebrow">Implementation Plan</span>
+    <h1>SeekMeal · 领域小模型实施方案</h1>
+    <p class="lede">把现有项目升级为「会对话的饮食助手」—— 用 0.6B–1.7B 开源小模型负责理解与表达，把全部数值计算继续交给已经验证过的确定性引擎。含工具协议、数据合成、QLoRA 训练配置与自动评估方案。</p>
+    <div class="badges">
+      <span class="badge">目标机型 RTX 5060 Laptop 8GB</span>
+      <span class="badge">基座 Qwen3-0.6B / 1.7B</span>
+      <span class="badge">QLoRA 4-bit</span>
+      <span class="badge">数据自合成</span>
+    </div>
+  </div>
+</header>
+
+<h2><span class="num">01</span>核心结论</h2>
+<div class="ok">
+  <b>不训"会算数的模型"，训"会听话的模型"。</b><br>
+  SeekMeal 已经有一套确定性引擎（公式 / 食物库 / 推荐 / 排餐），它的计算是可信的。小模型要解决的问题只有一个：<b>把用户随口说的一句中文，翻译成引擎能吃的结构化参数</b>，再把引擎吐出来的数字组织成人话。
+</div>
+<div class="warn"><b>必须先破除的一个误解：</b>没有个人能"从零训一个大模型"。哪怕 124M 参数的 GPT-2 级模型，从零预训练也要几十亿 token + 几千 GPU 小时。市面上所有 0.6B / 1.5B / 7B 模型<b>无一例外都是拿开源基座做领域适配</b>。所谓"做出我的小模型"，本质是<b>领域微调</b>。</div>
+
+<div class="metrics">
+  <div class="metric"><div class="v">8 GB</div><div class="k">可用显存</div></div>
+  <div class="metric"><div class="v">0.6–3 B</div><div class="k">可训参数区间</div></div>
+  <div class="metric"><div class="v">1.5–2万</div><div class="k">合成数据条数</div></div>
+  <div class="metric"><div class="v">9 个</div><div class="k">引擎工具</div></div>
+  <div class="metric"><div class="v">11 类</div><div class="k">意图标签</div></div>
+</div>
+
+<h2><span class="num">02</span>能力边界（先认清硬件）</h2>
+<table>
+  <thead><tr><th>目标</th><th>显存需求</th><th>本机可行性</th><th>说明</th></tr></thead>
+  <tbody>
+    <tr><td>推理 0.6B（4-bit）</td><td>~1 GB</td><td>✅ 轻松</td><td>CPU 都能跑</td></tr>
+    <tr><td>推理 1.7B（4-bit）</td><td>~2 GB</td><td>✅ 轻松</td><td>首选部署形态</td></tr>
+    <tr><td>推理 7B（4-bit）</td><td>~5 GB</td><td>✅ 可以</td><td>但微调不了</td></tr>
+    <tr><td>QLoRA 微调 0.6B</td><td>~4 GB</td><td>✅ 很舒适</td><td>练手首选</td></tr>
+    <tr><td>QLoRA 微调 1.5–1.7B</td><td>~7–8 GB</td><td>✅ 舒适区</td><td><b>主目标</b></td></tr>
+    <tr><td>QLoRA 微调 3B</td><td>~8 GB+</td><td>⚠️ 勉强</td><td>需压 batch=1、seq=1024</td></tr>
+    <tr><td>QLoRA 微调 7B</td><td>~11 GB</td><td>❌</td><td>显存不够</td></tr>
+    <tr><td>全参微调 0.5B</td><td>~12 GB+</td><td>❌</td><td>—</td></tr>
+    <tr><td>从零预训练</td><td>数百 GB</td><td>❌</td><td>不讨论</td></tr>
+  </tbody>
+</table>
+
+<h3>2.1 三个必踩的坑</h3>
+<div class="warn">
+  <b>坑一 · C 盘只剩 19 GB。</b> 模型权重、数据集、pip 缓存默认全落在 C 盘用户目录，一个 1.7B 模型加数据集就能撑爆。<b>动手第一件事就是把缓存指到 E 盘</b>（剩 139 GB）：<br>
+  <code>HF_HOME</code> / <code>TORCH_HOME</code> / <code>HF_HUB_CACHE</code> / <code>PIP_CACHE_DIR</code> 全部改到 <code>E:\</code>。
+</div>
+<div class="warn">
+  <b>坑二 · RTX 5060 是 Blackwell（sm_120）。</b> 必须装 <b>PyTorch 2.7+ 的 cu128</b> 轮子。网上大半教程还停在 cu121，装完运行必报 <code>no kernel image is available for execution</code> —— 这个报错看起来像驱动问题，其实是版本不匹配，会浪费一整晚。
+</div>
+<div class="warn">
+  <b>坑三 · 内存只有 15.3 GB（日常可用约 6 GB）。</b> 数据处理必须流式读写，不要 <code>json.load</code> 整个数据集再遍历；训练时 dataloader 的 <code>num_workers</code> 别开太大。
+</div>
+
+<h2><span class="num">03</span>总体架构</h2>
+<p>三层职责严格分离。这条红线与现有项目"所有数值由确定性代码计算"的原则一脉相承，只是因为小模型能力更弱，收得更紧。</p>
+<pre><code>用户自然语言
+      │
+      ▼
+┌─────────────────────────────┐
+│  ① 理解层 · 小模型            │   只做两件事：
+│  意图识别 + 参数抽取           │   · 这句属于哪个意图
+│  输出：{intent, args}         │   · 参数是什么
+└─────────────────────────────┘
+      │  结构化 JSON
+      ▼
+┌─────────────────────────────┐
+│  ② 计算层 · 确定性引擎（已有）  │   全部数字在这里产生
+│  formulas / food_db /        │   模型不参与任何运算
+│  analyzer / recommend /      │
+│  planner / 体重趋势           │
+└─────────────────────────────┘
+      │  计算结果 JSON
+      ▼
+┌─────────────────────────────┐
+│  ③ 表达层 · 同一个小模型       │   把 JSON 说成人话
+│  模板兜底：模型挂了也能回答      │   不新增任何数字
+└─────────────────────────────┘
+      │
+      ▼
+   自然语言回答</code></pre>
+<div class="note"><b>为什么表达层也要兜底模板？</b>因为模型可能把 174 说成 147。做法是：模板先生成一份"标准答案"，模型只负责润色；如果润色结果里的数字与引擎输出不一致，<b>直接丢弃模型输出，回退模板</b>。这条校验让"模型胡说数字"从根上不可能发生。</div>
+
+<h2><span class="num">04</span>工具协议（理解层的输出契约）</h2>
+<p>理解层的输出不是自由文本，而是固定 schema 的 JSON。9 个工具直接对应引擎现有能力：</p>
+<table>
+  <thead><tr><th>#</th><th>工具名</th><th>参数</th><th>调用引擎</th></tr></thead>
+  <tbody>
+    <tr><td>1</td><td><code>set_profile</code></td><td>sex, weight, height, age, activity, goal, weekly_delta_kg, body_fat_pct?</td><td><code>compute_energy_budget()</code> + <code>macro_targets()</code></td></tr>
+    <tr><td>2</td><td><code>log_meal</code></td><td>text, meal?</td><td><code>FoodDB.parse_many()</code> → <code>DayLog.add()</code></td></tr>
+    <tr><td>3</td><td><code>query_remaining</code></td><td>（无）</td><td><code>DayLog.remaining(target)</code></td></tr>
+    <tr><td>4</td><td><code>query_summary</code></td><td>（无）</td><td><code>DayLog.totals()</code> + <code>evaluate()</code> + <code>risks()</code></td></tr>
+    <tr><td>5</td><td><code>query_food</code></td><td>name, grams?</td><td><code>FoodDB.search()</code> / <code>parse()</code></td></tr>
+    <tr><td>6</td><td><code>recommend_recipes</code></td><td>query?, top_k?, avoid?</td><td><code>RecipeBook.recommend()</code></td></tr>
+    <tr><td>7</td><td><code>plan_day</code></td><td>（无）</td><td><code>plan_day()</code> + <code>DayPlan.shopping_list()</code></td></tr>
+    <tr><td>8</td><td><code>log_weight</code> / <code>weight_trend</code></td><td>weight? / （无）</td><td><code>add_weight()</code> / <code>ema_series()</code> + <code>kalman_trend()</code></td></tr>
+    <tr><td>9</td><td><code>delete_log</code></td><td>index?</td><td><code>DayLog.remove()</code></td></tr>
+    <tr><td>—</td><td><code>refuse_safety</code></td><td>reason</td><td>不调用引擎，直接返回就医引导</td></tr>
+  </tbody>
+</table>
+
+<h3>4.1 输出格式</h3>
+<p>刻意<b>不用</b>完整的 OpenAI function-calling JSON（token 多、小模型容易生成错）。改用极简单行协议，训练和推理都用它：</p>
+<pre><code>{"intent": "log_meal", "args": {"text": "一碗米饭 150g鸡胸肉"}, "confidence": 0.95}
+</code></pre>
+<div class="info"><b>为什么极简？</b>0.6B 模型生成嵌套 JSON 的容错率很低。字段越少、层级越浅，可解析率越高。实测中"两字段单层 JSON"比完整 function-calling 格式的解析成功率通常高出 15–25 个百分点。</div>
+
+<h2><span class="num">05</span>路线 B · 打通闭环（先做，1–2 天）</h2>
+<div class="stage">
+  <div class="st-t">Stage B · 不训练</div>
+  <div class="st-h">用现成小模型 + 提示词跑通整条链路</div>
+  <div class="st-d">目的：验证架构可行，且为路线 A 提供对照基线</div>
+</div>
+<ol>
+  <li><b>工程骨架</b>：<code>SeekMeal/llm/</code> 目录，含 <code>tools.py</code>（工具层）、<code>prompt.py</code>（系统提示词）、<code>router.py</code>（调度器）、<code>backend.py</code>（模型后端抽象）。</li>
+  <li><b>后端抽象</b>：定义统一接口 <code>generate(messages) -&gt; str</code>。先实现两个：
+    <ul>
+      <li><code>RuleBackend</code> —— 纯规则模拟器，<b>不依赖任何模型</b>，用来验证链路本身</li>
+      <li><code>LlamaCppBackend</code> / <code>OllamaBackend</code> —— 接真实小模型</li>
+    </ul>
+  </li>
+  <li><b>跑通闭环</b>：规则后端先把 9 个工具全部打通，确认「理解 → 计算 → 表达 → 数字校验」四步都对。</li>
+  <li><b>插入真模型</b>：下载 Qwen3-0.6B GGUF（约 400 MB），换后端，对比两者差异。</li>
+  <li><b>建立基线</b>：记录提示词版在测试集上的意图准确率 —— 这就是路线 A 要超越的数字。</li>
+</ol>
+<div class="ok"><b>这一步的产出本身就是可用的。</b> 提示词版已经能把"我今晚还能吃多少"变成真实回答，不需要等训练完成。</div>
+
+<h2><span class="num">06</span>路线 A · 领域微调（核心，2–4 周）</h2>
+<div class="stage">
+  <div class="st-t">Stage A · 核心</div>
+  <div class="st-h">用引擎自合成数据，QLoRA 训出"你的模型"</div>
+  <div class="st-d">目的：让 1.7B 在意图识别与参数抽取上超过提示词版</div>
+</div>
+
+<h3>6.1 数据从哪来 —— 这是本项目最大的优势</h3>
+<p>别人做领域微调卡在数据：人工标注几千条问答又贵又不可靠。而 SeekMeal <b>自带一台确定性引擎</b>，可以机器生成"答案 100% 正确"的问答对：</p>
+<pre><code>随机采样参数  →  套问题模板  →  调用真实引擎  →  (问题, 答案) 对
+                                    ↑
+                        答案由代码算出，绝对正确、可自动验证</code></pre>
+<table>
+  <thead><tr><th>环节</th><th>做法</th></tr></thead>
+  <tbody>
+    <tr><td>参数采样</td><td>在合理区间随机：体重 45–110 kg、身高 150–195 cm、年龄 16–65、活动水平 5 档、目标 3 种、每周变化 0–1.5 kg</td></tr>
+    <tr><td>问题模板</td><td>每个意图 20–40 条口语化模板，覆盖不同说法（"我还能吃多少"/"今天还剩多少额度"/"还差多少热量"）</td></tr>
+    <tr><td>答案生成</td><td>调用真引擎算，再由模板渲染成自然语言（<b>不是让大模型编</b>）</td></tr>
+    <tr><td>难例注入</td><td>故意加入：含糊表达、错别字、多意图混说、超范围提问、涉及疾病需拒答</td></tr>
+    <tr><td>规模</td><td>1.5–2 万条（领域窄，不需要百万级）</td></tr>
+    <tr><td>切分</td><td>训练 / 验证 / 测试 = 8 : 1 : 1，按<b>参数组合</b>切分而非随机切分，防泄漏</td></tr>
+  </tbody>
+</table>
+
+<h3>6.2 意图体系（11 类）</h3>
+<table>
+  <thead><tr><th>意图</th><th>典型说法</th><th>对应工具</th></tr></thead>
+  <tbody>
+    <tr><td><code>set_profile</code></td><td>"我男 175 80 公斤 25 岁，久坐，想减脂"</td><td>set_profile</td></tr>
+    <tr><td><code>log_meal</code></td><td>"刚吃了一碗米饭和两个鸡蛋"</td><td>log_meal</td></tr>
+    <tr><td><code>query_remaining</code></td><td>"我今晚还能吃多少"</td><td>query_remaining</td></tr>
+    <tr><td><code>query_summary</code></td><td>"我今天一共吃了多少卡"</td><td>query_summary</td></tr>
+    <tr><td><code>query_food</code></td><td>"鸡胸肉一百克多少热量"</td><td>query_food</td></tr>
+    <tr><td><code>recommend</code></td><td>"推荐点高蛋白的菜"</td><td>recommend_recipes</td></tr>
+    <tr><td><code>plan_day</code></td><td>"帮我排一下明天吃什么"</td><td>plan_day</td></tr>
+    <tr><td><code>log_weight</code></td><td>"今天称了 78.5"</td><td>log_weight</td></tr>
+    <tr><td><code>weight_trend</code></td><td>"我最近体重趋势怎么样"</td><td>weight_trend</td></tr>
+    <tr><td><code>delete_log</code></td><td>"把刚才那条删了"</td><td>delete_log</td></tr>
+    <tr><td><code>refuse_safety</code></td><td>"我有糖尿病该怎么吃"</td><td>直接引导就医</td></tr>
+  </tbody>
+</table>
+<div class="note"><b><code>refuse_safety</code> 必须占足比例（建议 ≥8%）。</b> 涉及疾病、用药、孕期、进食障碍的提问，一律不做营养建议，直接引导到医生或注册营养师。这既是合规需要，也是产品的底线。</div>
+
+<h3>6.3 QLoRA 训练配置</h3>
+<table>
+  <thead><tr><th>项目</th><th>0.6B（练手）</th><th>1.7B（主目标）</th><th>理由</th></tr></thead>
+  <tbody>
+    <tr><td>基座</td><td>Qwen3-0.6B</td><td>Qwen3-1.7B</td><td>中文强、有 official instruct 版、Apache-2.0</td></tr>
+    <tr><td>量化</td><td colspan="2">4-bit NF4 + 双重量化</td><td>显存直接砍到 1/4</td></tr>
+    <tr><td>LoRA r</td><td>16</td><td>16–32</td><td>领域适配不需要高秩</td></tr>
+    <tr><td>LoRA alpha</td><td>32</td><td>32</td><td>惯例取 2r</td></tr>
+    <tr><td>lora_dropout</td><td colspan="2">0.05</td><td>—</td></tr>
+    <tr><td>target_modules</td><td colspan="2">q/k/v/o + gate/up/down proj</td><td>全线性层，效果好于只调 q/v</td></tr>
+    <tr><td>学习率</td><td colspan="2">1e-4 ~ 2e-4（cosine）</td><td>QLoRA 常用区间</td></tr>
+    <tr><td>batch × 累积</td><td>4 × 4</td><td>2 × 8</td><td>凑到等效 batch 16</td></tr>
+    <tr><td>max_seq_len</td><td>1024</td><td>1024</td><td>单轮问答很短，够用且省显存</td></tr>
+    <tr><td>epoch</td><td colspan="2">3（早停看验证损失）</td><td>太多会过拟合到模板措辞</td></tr>
+    <tr><td>预计耗时</td><td>~30 分钟</td><td>~2–4 小时</td><td>单卡 8GB</td></tr>
+  </tbody>
+</table>
+<div class="info"><b>工具链二选一：</b><br>
+ · <b>LLaMA-Factory</b> —— 有 WebUI，配置文件驱动，不写训练脚本，适合先跑通；<br>
+ · <b>Unsloth</b> —— 同显存下更快、占用更低，适合 8GB 临界场景，但需要写少量代码。</div>
+
+<h3>6.4 训练目标：只优化"理解"，不碰"表达"</h3>
+<p>训练时的 loss <b>只算在模型的输出段</b>（即那段 JSON），用户输入与工具返回结果都 mask 掉。理由：表达层的质量由模板保证，让模型去学"怎么把 174 kcal 说得好听"性价比很低，而且它会开始幻想数字。</p>
+<pre><code>样本结构（训练时只对 assistant 段计 loss）
+&lt;|im_start|&gt;system
+你是 SeekMeal 的意图解析器……只输出 JSON。<|im_end|&gt;
+&lt;|im_start|&gt;user
+我今晚还能吃多少<|im_end|&gt;
+&lt;|im_start|&gt;assistant
+{"intent":"query_remaining","args":{}}<|im_end|&gt;   ← 只有这段算 loss</code></pre>
+
+<h2><span class="num">07</span>评估方案（可自动判分）</h2>
+<div class="stage">
+  <div class="st-t">Evaluation</div>
+  <div class="st-h">四个指标，全部机器判定，不靠人眼</div>
+  <div class="st-d">这也是本项目相对其他微调项目的优势</div>
+</div>
+<table>
+  <thead><tr><th>指标</th><th>怎么算</th><th>目标线</th></tr></thead>
+  <tbody>
+    <tr><td><b>JSON 可解析率</b></td><td>模型输出能被 <code>json.loads</code> 且字段合法的比例</td><td>≥ 99%</td></tr>
+    <tr><td><b>意图准确率</b></td><td>预测 intent 与标注 intent 完全一致的比例</td><td>≥ 95%（提示词版基线约 80–88%）</td></tr>
+    <tr><td><b>参数抽取 F1</b></td><td>args 各字段逐字段比对（数值容差 ±0.5）</td><td>≥ 90%</td></tr>
+    <tr><td><b>端到端成功率</b></td><td>一次对话中链路无异常完成任务的比例</td><td>≥ 90%</td></tr>
+    <tr><td><b>安全拒答率</b></td><td>医疗类问题被正确拒答的比例</td><td><b>= 100%</b>（硬指标）</td></tr>
+    <tr><td><b>幻觉数字率</b></td><td>回答中出现的数字在引擎输出里找不到对应来源</td><td><b>= 0</b>（由校验层强制保证）</td></tr>
+  </tbody>
+</table>
+<div class="ok"><b>为什么能自动判分？</b>因为标准答案由引擎生成，判定也是拿引擎复算一遍。不需要人工标注测试集，也不需要另一个大模型当裁判——<b>确定性引擎本身就是唯一真相</b>。这是很多领域微调项目做不到的。</div>
+
+<h2><span class="num">08</span>接入 SeekMeal</h2>
+<table>
+  <thead><tr><th>方式</th><th>做法</th><th>适用</th></tr></thead>
+  <tbody>
+    <tr><td>新增 <code>/api/chat</code></td><td>在 <code>api.py</code> 加一个端点，接收自然语言，返回回答</td><td>网页直接用</td></tr>
+    <tr><td>网页对话面板</td><td><code>web/index.html</code> 加一个输入框 + 对话记录区</td><td>面向使用者</td></tr>
+    <tr><td>CLI 自然语言模式</td><td><code>cli.py</code> 增加一个"用一句话说"的入口</td><td>本机调试</td></tr>
+  </tbody>
+</table>
+<div class="note"><b>不改动现有代码。</b> 理解层是新增模块，原引擎一行不动 —— 这样即使模型效果不好，现有网页和 API 也完全不受影响，可以随时摘掉。</div>
+
+<h2><span class="num">09</span>环境准备</h2>
+<pre><code>rem 1) 缓存改到 E 盘（C 盘只剩 19 GB，必做）
+setx HF_HOME                "E:\ai\cache\hf"
+setx HF_HUB_CACHE           "E:\ai\cache\hf\hub"
+setx TORCH_HOME             "E:\ai\cache\torch"
+setx PIP_CACHE_DIR          "E:\ai\cache\pip"
+
+rem 2) 建训练专用环境（与 seekmeal 运行环境隔离）
+python -m venv %USERPROFILE%\.workbuddy\binaries\python\envs\seekmeal-llm
+
+rem 3) 装 Blackwell 对应的 torch（cu128，必须 2.7+）
+pip install torch --index-url https://download.pytorch.org/whl/cu128
+
+rem 4) 训练栈
+pip install transformers datasets peft trl accelerate bitsandbytes
+
+rem 5) 推理量化导出（可选）
+pip install llama-cpp-python</code></pre>
+<div class="warn"><b>环境隔离说明：</b>训练环境单独建 (<code>seekmeal-llm</code>)，<b>不要</b>装进现有的 <code>envs\seekmeal</code>。原因：torch + CUDA 全家桶好几个 GB，混进去会让原本轻量的运行环境变重；而且两者坏掉的时机不同，隔离后训练环境炸了不影响线上服务。</div>
+
+<h2><span class="num">10</span>里程碑</h2>
+<table>
+  <thead><tr><th>阶段</th><th>内容</th><th>完成标志</th></tr></thead>
+  <tbody>
+    <tr><td><span class="pill now">M1</span></td><td>工程骨架 + 工具层 + 规则后端</td><td>9 个工具全通，规则版能完整对话一轮</td></tr>
+    <tr><td><span class="pill now">M2</span></td><td>数据合成脚本</td><td>产出 ≥15000 条训练数据并切分完毕</td></tr>
+    <tr><td><span class="pill now">M3</span></td><td>评估脚本</td><td>能对任一后端自动打分，输出四项指标</td></tr>
+    <tr><td><span class="pill next">M4</span></td><td>接入 Qwen3-0.6B 建立基线</td><td>提示词版四项指标有实测数字</td></tr>
+    <tr><td><span class="pill next">M5</span></td><td>QLoRA 微调 0.6B 练手</td><td>训练跑通，指标较基线提升</td></tr>
+    <tr><td><span class="pill later">M6</span></td><td>换 1.7B 正式训练 + 调参</td><td>意图准确率 ≥95%、参数 F1 ≥90%</td></tr>
+    <tr><td><span class="pill later">M7</span></td><td>接入网页 / API</td><td>线上可对话使用</td></tr>
+  </tbody>
+</table>
+
+<h2><span class="num">11</span>风险与回退</h2>
+<table>
+  <thead><tr><th>风险</th><th>概率</th><th>应对</th></tr></thead>
+  <tbody>
+    <tr><td>1.7B 训练显存不足</td><td>中</td><td>降到 0.6B；或 seq_len 降到 768、batch=1、开启梯度检查点</td></tr>
+    <tr><td>合成数据过于模板化，模型只会背模板</td><td><b>高</b></td><td>模板多样性做到每个意图 20–40 条；注入错别字/口语/混说；测试集用<b>未见过的</b>表达方式</td></tr>
+    <tr><td>模型学会"自己算数"并算错</td><td>中</td><td>训练时只在 JSON 段计 loss，不让它看数字；表达层加数字一致性校验，不一致即回退模板</td></tr>
+    <tr><td>Blackwell 兼容性问题卡住</td><td>中</td><td>先只用 CPU/GGUF 走通推理与数据合成；训练再单独解决 CUDA</td></tr>
+    <tr><td>折腾几周效果不如提示词版</td><td>中</td><td><b>这本身也是结论</b>。提示词版已经能用，微调版是加分项，不是必需品 —— 架构上两者可随时切换</td></tr>
+  </tbody>
+</table>
+<div class="violet"><b>最重要的一条设计保障：</b>整条链路是<b>可摘除</b>的。小模型只是一个新增模块，接不上、效果差、显存不够，摘掉之后 SeekMeal 还是原来那个能用的 SeekMeal。不做"要么全成要么全废"的赌注。</div>
+
+<footer>
+  SeekMeal · 领域小模型实施方案<br>
+  本工具仅用于饮食记录与营养参考，不构成医疗建议，不能替代医生诊疗。
+</footer>
+
+</div>
+</body>
+</html>

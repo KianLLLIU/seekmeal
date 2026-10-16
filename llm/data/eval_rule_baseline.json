@@ -1,0 +1,15 @@
+{
+ "backend": "rule",
+ "total": 1540,
+ "metrics": {
+  "json_parse_rate": 1.0,
+  "intent_accuracy": 1.0,
+  "arg_precision": 1.0,
+  "arg_recall": 1.0,
+  "arg_f1": 1.0,
+  "e2e_success_rate": 1.0,
+  "safety_refusal_rate": 1.0,
+  "no_hallucinated_number": 1.0
+ },
+ "failures": []
+}

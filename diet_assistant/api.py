@@ -14,6 +14,7 @@ from __future__ import annotations
 
 import os
 import re
+import sys
 from datetime import date
 from pathlib import Path
 from typing import Any
@@ -37,6 +38,23 @@ from .formulas import (
 )
 from .planner import plan_day, suggest_snack
 from .recommend import RecipeBook
+
+# 对话模块（llm/）是项目根下的独立包，这里把根目录补进 sys.path，
+# 这样无论从哪个工作目录启动 uvicorn 都能导入。
+_ROOT = Path(__file__).resolve().parents[1]
+if str(_ROOT) not in sys.path:
+    sys.path.insert(0, str(_ROOT))
+
+#: 对话模块导入失败不应拖垮整个 API——表单功能与对话功能是解耦的。
+try:
+    from llm.service import ChatService, make_session
+except Exception as _exc:  # pragma: no cover - 只在本机环境异常时触发
+    ChatService = None  # type: ignore[assignment]
+    make_session = None  # type: ignore[assignment]
+    _CHAT_IMPORT_ERROR = str(_exc)
+else:
+    _CHAT_IMPORT_ERROR = ""
+
 
 DISCLAIMER = "本工具仅做营养记录与参考，不构成医疗建议，不能替代医生诊疗。"
 
@@ -130,6 +148,32 @@ def _targets_of(profile: dict) -> MacroTarget:
 
 
 # ---------------------------------------------------------------------------
+# 对话服务（llm/）
+# ---------------------------------------------------------------------------
+
+#: 后端由环境变量决定，未配置模型时自动退回规则后端。见 llm/service.py。
+chat_service: Any = ChatService() if ChatService is not None else None
+
+
+def _chat_session(user_id: str):
+    """把 api 层的状态「引用」给对话层。
+
+    log 与 weights 传的是同一个对象，因此对话里记的一餐会立刻出现在表单里，
+    反之亦然——两边共用一份数据，不需要任何同步代码。
+    只有 profile 会被对话整体替换，所以处理完后要写回一次。
+    """
+    session = make_session(
+        user_id,
+        profile=_state["profiles"].get(user_id),
+        log=_log_for(user_id),
+        weights=_state["weights"].setdefault(user_id, []),
+    )
+    _prune("weights")
+    return session
+
+
+
+# ---------------------------------------------------------------------------
 # 请求模型
 # ---------------------------------------------------------------------------
 
@@ -176,6 +220,11 @@ class WeightIn(BaseModel):
     day: str | None = Field(None, max_length=10)
 
 
+class ChatIn(BaseModel):
+    text: str = Field(..., max_length=500)
+    user_id: str = Field("default", max_length=40)
+
+
 # ---------------------------------------------------------------------------
 # 接口
 # ---------------------------------------------------------------------------
@@ -191,7 +240,57 @@ def web_index() -> FileResponse:
 
 @app.get("/health")
 def health() -> dict:
-    return {"status": "ok", "foods": len(db), "recipes": len(book), "disclaimer": DISCLAIMER}
+    llm_info = chat_service.info.as_dict() if chat_service is not None else {
+        "kind": "unavailable", "note": _CHAT_IMPORT_ERROR,
+    }
+    return {"status": "ok", "foods": len(db), "recipes": len(book),
+            "llm": llm_info, "disclaimer": DISCLAIMER}
+
+
+@app.post("/api/chat")
+def chat(body: ChatIn) -> dict:
+    """一句话完成记录、查询、推荐与排餐。
+
+    流程是「模型做翻译、代码做计算」：
+        对话文本 -> 理解层解析出 intent/args -> 确定性引擎算数值 -> 模板作答
+    回答里的每个数字都来自引擎，出现引擎结果里没有的数字会被判定为编造并回退模板。
+    """
+    if chat_service is None:
+        raise HTTPException(503, f"对话模块不可用：{_CHAT_IMPORT_ERROR}")
+    text = body.text.strip()
+    if not text:
+        raise HTTPException(400, "说点什么吧，比如「中午吃了一碗米饭」")
+
+    session = _chat_session(body.user_id)
+    res = chat_service.handle(body.user_id, text, session)
+
+    # profile 被整体替换，需要写回；log / weights 是引用，已经就地生效
+    if session.profile is not None:
+        _state["profiles"][body.user_id] = session.profile
+        _prune("profiles")
+
+    return {
+        "text": res.text,
+        "intent": res.intent,
+        "args": res.args,
+        "answer": res.answer,
+        "result": res.result,
+        "path": res.path,
+        "numbers_ok": res.numbers_ok,
+        "error": res.error,
+        "backend": chat_service.info.as_dict(),
+        "disclaimer": DISCLAIMER,
+    }
+
+
+@app.post("/api/chat/reset")
+def chat_reset(user_id: str = Query("default", max_length=40)) -> dict:
+    """清空某个用户的对话历史（不动饮食记录与档案）。"""
+    if chat_service is None:
+        raise HTTPException(503, "对话模块不可用")
+    chat_service.forget(user_id)
+    return {"user_id": user_id, "reset": True}
+
 
 
 @app.get("/api/activity-levels")

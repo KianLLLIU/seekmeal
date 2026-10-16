@@ -1,0 +1,53 @@
+# SeekMeal 领域小模型 · QLoRA 微调配置（LLaMA-Factory）
+#
+# 用法：
+#   1) 把 llm/data/ 下的 dataset_info.json 与三个 json 拷进 LLaMA-Factory 的 data/
+#   2) 先把缓存重定向到 E 盘（C 盘只剩 19GB，模型权重会直接写满）
+#        set HF_HOME=E:\hf & set HF_HUB_CACHE=E:\hf\hub & set TEMP=E:\tmp & set TMP=E:\tmp
+#   3) llamafactory-cli train llm/lora_sft.yaml
+#
+# 显存预算（RTX 5060 Laptop 8GB，Blackwell sm_120）：
+#   0.6B + 4bit + cutoff_len 1024 + batch 8 ≈ 4~5GB，轻松
+#   1.7B + 4bit + 同上                        ≈ 6~7GB，舒适
+#   3B                                       勉强，需调小 batch
+#   7B                                       这个显存下不要碰
+
+model_name_or_path: Qwen/Qwen3-0.6B
+template: qwen3
+
+stage: sft
+do_train: true
+finetuning_type: lora
+lora_rank: 16
+lora_alpha: 32
+lora_dropout: 0.05
+lora_target: all
+quantization_bit: 4          # QLoRA
+quantization_method: bnb
+
+dataset: seekmeal            # = data/dataset_info.json 里的 key
+eval_dataset: seekmeal_valid
+cutoff_len: 1024             # 本任务输入输出都很短，1024 足够，省显存
+overwrite_cache: true
+preprocessing_num_workers: 8
+
+# 数据集 1.2 万条、输出只有一行 JSON，3 个 epoch 足够；
+# 再多容易过拟合到模板句式上，反而伤真实用户说法的泛化。
+learning_rate: 1.0e-4
+num_train_epochs: 3.0
+per_device_train_batch_size: 8
+gradient_accumulation_steps: 4
+lr_scheduler_type: cosine
+warmup_ratio: 0.05
+max_grad_norm: 1.0
+
+bf16: true
+gradient_checkpointing: true
+logging_steps: 20
+save_steps: 500
+save_total_limit: 2
+plot_loss: true
+
+# E 盘：C 盘空间紧张，输出和缓存都不要留在 C
+output_dir: E:/hf/seekmeal-lora
+report_to: none
