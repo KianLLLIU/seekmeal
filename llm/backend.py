@@ -15,12 +15,14 @@
 from __future__ import annotations
 
 import json
+import os
 import re
 import urllib.error
 import urllib.request
 from typing import Any, Protocol
 
 from . import schema
+from .prompt import build_chatml
 
 
 class Backend(Protocol):
@@ -443,6 +445,90 @@ class LlamaCppBackend:
 
 
 # ---------------------------------------------------------------------------
+# 本地 transformers 后端：直接吃微调后的 LoRA 适配器
+# ---------------------------------------------------------------------------
+
+
+class HFBackend:
+    """本地 transformers 推理，可在基座模型上加载 LoRA 适配器。
+
+    用途是把「微调到底有没有用」变成可测量的事：同一个 evaluate.py，
+    把 rule / base / lora 三个后端各跑一遍，差值就是微调的净收益。
+
+    依赖 torch + transformers + peft，因此只有训练环境里可用；
+    没装的部署环境照旧走规则或 OpenAI 兼容后端，互不影响。
+    """
+
+    def __init__(
+        self,
+        model_path: str,
+        adapter_path: str = "",
+        max_new_tokens: int = 128,
+        device: str = "",
+        use_history: bool = False,
+    ) -> None:
+        try:
+            import torch
+            from transformers import AutoModelForCausalLM, AutoTokenizer
+        except ImportError as exc:  # pragma: no cover
+            raise RuntimeError(
+                "本地推理需要 torch 与 transformers，请先准备训练环境依赖"
+            ) from exc
+
+        self._torch = torch
+        self.device = device or ("cuda" if torch.cuda.is_available() else "cpu")
+        self.max_new_tokens = max_new_tokens
+        #: 默认不吃对话历史：训练语料是单轮的，喂历史等于把输入推到训练分布之外，
+        #: 分数会凭空虚低。要多轮上下文时再显式打开。
+        self.use_history = use_history
+
+        self.tokenizer = AutoTokenizer.from_pretrained(model_path, trust_remote_code=True)
+        if self.tokenizer.pad_token is None:
+            self.tokenizer.pad_token = self.tokenizer.eos_token
+
+        dtype = torch.bfloat16 if self.device == "cuda" else torch.float32
+        try:
+            self.model = AutoModelForCausalLM.from_pretrained(
+                model_path, torch_dtype=dtype, trust_remote_code=True)
+        except TypeError:
+            self.model = AutoModelForCausalLM.from_pretrained(
+                model_path, dtype=dtype, trust_remote_code=True)
+
+        if adapter_path:
+            from peft import PeftModel  # 延迟导入
+            self.model = PeftModel.from_pretrained(self.model, adapter_path)
+
+        self.model.to(self.device)
+        self.model.eval()
+
+        tag = os.path.basename(adapter_path.rstrip("/\\")) if adapter_path else "base"
+        self.name = f"hf:{tag}"
+
+    def _render(self, text: str, system: str, history: list[dict[str, str]] | None):
+        # 与训练端共用同一段拼装逻辑，保证训练/推理格式零漂移。
+        # 不用 apply_chat_template：它会给 assistant 补空思考块，而我们要的是直接吐 JSON。
+        prompt = build_chatml(system, text, history=history)
+        return self.tokenizer(prompt, add_special_tokens=False,
+                              return_tensors="pt").input_ids
+
+    def parse(self, text: str, *, system: str = "", history: list[dict[str, str]] | None = None) -> str:
+        torch = self._torch
+        ids = self._render(text, system, history if self.use_history else None).to(self.device)
+        with torch.no_grad():
+            out = self.model.generate(
+                input_ids=ids,
+                attention_mask=torch.ones_like(ids),
+                max_new_tokens=self.max_new_tokens,
+                do_sample=False,          # 意图解析要确定性，贪婪最合适
+                repetition_penalty=1.05,
+                pad_token_id=self.tokenizer.pad_token_id,
+                eos_token_id=self.tokenizer.eos_token_id,
+            )
+        gen = out[0][ids.shape[1]:]
+        return self.tokenizer.decode(gen, skip_special_tokens=True)
+
+
+# ---------------------------------------------------------------------------
 # 脚本后端：测试用
 # ---------------------------------------------------------------------------
 
@@ -473,4 +559,6 @@ def make_backend(kind: str = "rule", **kw: Any) -> Backend:
         return OpenAICompatBackend(**kw)
     if kind in ("llamacpp", "gguf"):
         return LlamaCppBackend(**kw)
-    raise ValueError(f"未知后端 {kind!r}，可选：rule / openai / llamacpp")
+    if kind in ("hf", "local", "transformers"):
+        return HFBackend(**kw)
+    raise ValueError(f"未知后端 {kind!r}，可选：rule / openai / llamacpp / hf")

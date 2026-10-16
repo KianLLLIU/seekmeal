@@ -55,6 +55,39 @@ SYSTEM_PROMPT = f"""你是 SeekMeal 的意图解析器。把用户的一句话�
 输出：{{"intent": "refuse_safety", "args": {{"reason": "涉及糖尿病"}}}}
 """
 
+def build_chatml(system: str = "", user: str = "", assistant: str | None = None,
+                 history: list[dict[str, str]] | None = None) -> str:
+    """手工拼出 Qwen3 的 ChatML 输入。
+
+    为什么不直接用 tokenizer.apply_chat_template：
+
+      1. **返回类型不稳定**。transformers 5.x 下 `tokenize=True` 给回的是
+         ``Encoding`` 对象而不是 ``list[int]``，调用方 ``len()`` / 切片会静默算错——
+         实测表现为「训练样本 0 条，跳过 12233 条」，很难一眼看出是模板的锅。
+      2. **会塞进空思考块**。官方模板渲染 assistant 消息时会补上
+         ```` 这样的空块，而我们要的恰恰是「直接吐 JSON、不要思考」；
+         带着空思考块训练等于教模型先写一段推理，与目标相反。
+
+    手工拼的输出与官方模板逐字符一致（已实测比对），但完全确定，
+    而且训练与推理共用这一段代码，不会出现两边格式漂移。
+
+    user 传空串则不加 user 轮（做纯 prompt 用）；assistant 传 None 表示
+    只拼到 `<|im_start|>assistant\\n`，等待模型续写。
+    """
+    parts: list[str] = []
+    if system:
+        parts.append(f"<|im_start|>system\n{system}<|im_end|>\n")
+    for turn in history or []:
+        role = str(turn.get("role") or "user")
+        parts.append(f"<|im_start|>{role}\n{turn.get('content', '')}<|im_end|>\n")
+    if user:
+        parts.append(f"<|im_start|>user\n{user}<|im_end|>\n")
+    text = "".join(parts) + "<|im_start|>assistant\n"
+    if assistant is not None:
+        text += f"{assistant}<|im_end|>\n"
+    return text
+
+
 #: 表达层（可选润色）用的提示词。默认不启用，见 router.Router.paraphrase。
 PARAPHRASE_PROMPT = """把下面这段饮食记录改写得更口语、更亲切一点。
 

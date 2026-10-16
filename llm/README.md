@@ -24,14 +24,16 @@
 | 文件 | 职责 |
 | --- | --- |
 | `schema.py` | 意图与工具 schema 的**单一真相**。输出协议、参数区间、安全词表都在这。改这一处，训练标注、校验、评估自动同步 |
-| `prompt.py` | 理解层提示词（含 few-shot） |
-| `backend.py` | 四种模型后端：规则 / OpenAI 兼容 / llama.cpp / 脚本 |
+| `prompt.py` | 理解层提示词（含 few-shot）+ **ChatML 手工拼装 `build_chatml`**（训练与推理共用） |
+| `backend.py` | 五种模型后端：规则 / OpenAI 兼容 / llama.cpp / **本地 transformers（HFBackend）** / 脚本 |
 | `tools.py` | 把 `diet_assistant` 的纯逻辑包装成工具，**不依赖 FastAPI** |
 | `router.py` | 调度器。理解 → 校验 → 计算 → 表达 → 数字校验 |
 | `synth.py` | 训练数据合成器（用引擎自己造样本） |
-| `evaluate.py` | 自动评估，六项指标全部可自动判分 |
+| `train_lora.py` | **LoRA 微调脚本**（bf16 + LoRA，只依赖 torch/transformers/peft） |
+| `evaluate.py` | 自动评估，八项指标全部可自动判分 |
 | `service.py` | 接到 Web 服务上（供 `diet_assistant/api.py` 使用） |
 | `data/` | 已生成的数据集：train 12233 / valid 1525 / test 1540 |
+| `tools/download_qwen.py` | 从 ModelScope 拉权重（带断点续传，不依赖 modelscope 包） |
 
 ---
 
@@ -116,9 +118,52 @@ python -m llm.synth --total 15000 --sessions 300 --out llm/data
 
 ---
 
-## QLoRA 微调配方（8GB 显存）
+## 本地微调（两条路线）
 
-基座选 **Qwen3-0.6B**（轻松）或 **Qwen3-1.7B**（舒适）。3B 勉强，7B 在这个显存下不要碰。
+基座选 **Qwen3-0.6B**（8GB 显存下很轻松）或 **Qwen3-1.7B**（舒适）。3B 勉强，7B 不要碰。
+
+### 路线 A：自带脚本（推荐，依赖最少）
+
+只依赖 `torch + transformers + peft`，不引入 LLaMA-Factory 那一整套。
+
+**为什么不用 4-bit 量化**：0.6B 的 bf16 权重只有 1.2GB，8GB 显存绰绰有余；
+而 `bitsandbytes` 在 Windows 原生环境下要额外折腾。量化在这里是负担而不是收益。
+
+```bash
+# 1) 环境：E 盘建 venv，避免撑爆 C 盘
+python -m venv E:/seekmeal_llm/venv
+E:/seekmeal_llm/venv/Scripts/python.exe -m pip install torch --index-url https://download.pytorch.org/whl/cu128
+E:/seekmeal_llm/venv/Scripts/python.exe -m pip install transformers peft accelerate safetensors -i https://mirrors.aliyun.com/pypi/simple/
+
+# 2) 权重（走 ModelScope；huggingface.co 在国内常连不上）
+python tools/download_qwen.py --model Qwen/Qwen3-0.6B --out E:/seekmeal_llm/models/Qwen3-0.6B
+
+# 3) 训练
+HF_HOME=E:/seekmeal_llm/hf python -m llm.train_lora \
+    --model E:/seekmeal_llm/models/Qwen3-0.6B \
+    --train llm/data/seekmeal_train.json --valid llm/data/seekmeal_valid.json \
+    --system llm/data/system_prompt.txt \
+    --out E:/seekmeal_llm/out/seekmeal-lora --epochs 3 --bs 2 --accum 8 --lr 1e-4
+
+# 4) 三个后端对比评估：rule 基线 / base 未微调 / lora 微调后
+python -m llm.evaluate --backend rule --data llm/data/seekmeal_test.json
+python -m llm.evaluate --backend hf --model E:/seekmeal_llm/models/Qwen3-0.6B --data llm/data/seekmeal_test.json
+python -m llm.evaluate --backend hf --model E:/seekmeal_llm/models/Qwen3-0.6B \
+    --adapter E:/seekmeal_llm/out/seekmeal-lora --data llm/data/seekmeal_test.json
+```
+
+**实测踩到的两个坑**（都会被误读成「模型不行」）：
+
+1. **`apply_chat_template(tokenize=True)` 的返回类型变了**。transformers 5.x 下返回的是
+   `Encoding` 对象而不是 `list[int]`，`len()` 与切片全部静默算错 —— 表现是
+   「训练样本 0 条（跳过 12233 条）」，看着像数据坏了，其实是模板的锅。
+2. **官方模板会给 assistant 补一个空思考块**。渲染出来是「空 think 块 + 答案」，
+   而我们要的恰恰是「直接吐 JSON、不要思考」；带着空思考块训练，等于教模型先写推理。
+
+两个坑用同一招解决：**手工拼 ChatML**（`prompt.build_chatml`），训练与推理共用同一段代码。
+它与官方模板渲染出的文本逐字符一致，但完全确定，也不会出现训练/推理两边格式漂移。
+
+### 路线 B：LLaMA-Factory（QLoRA 4-bit）
 
 **环境准备（本机实测）**
 
@@ -137,7 +182,7 @@ set TEMP=E:\tmp
 set TMP=E:\tmp
 ```
 
-**训练（LLaMA-Factory 路线）**
+**训练**
 
 数据集已经按 LLaMA-Factory 的 sharegpt 格式落盘，`llm/data/dataset_info.json`
 里带好了 `default_system`，把它拷到 LLaMA-Factory 的 `data/` 下即可直接用

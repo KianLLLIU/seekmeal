@@ -30,6 +30,7 @@ from .tools import Engine, Session
 
 ENV_BACKEND = "SEEKMEAL_LLM_BACKEND"
 ENV_MODEL = "SEEKMEAL_LLM_MODEL"
+ENV_ADAPTER = "SEEKMEAL_LLM_ADAPTER"
 ENV_BASE_URL = "SEEKMEAL_LLM_BASE_URL"
 DEFAULT_BASE_URL = "http://127.0.0.1:1234/v1"
 
@@ -71,6 +72,13 @@ def backend_from_env() -> tuple[Backend, BackendInfo]:
                 raise RuntimeError(f"未设置 {ENV_MODEL}")
             backend = make_backend("llamacpp", model_path=model)
             return backend, BackendInfo("llamacpp", backend.name, requested, model=model)
+        if requested in ("hf", "local"):
+            if not model:
+                raise RuntimeError(f"未设置 {ENV_MODEL}")
+            adapter = (os.environ.get(ENV_ADAPTER) or "").strip()
+            backend = make_backend("hf", model_path=model, adapter_path=adapter)
+            return backend, BackendInfo("hf", backend.name, requested, model=model,
+                                        note=f"LoRA={adapter}" if adapter else "未挂适配器（基座）")
         raise RuntimeError(f"未知的 {ENV_BACKEND}={requested!r}")
     except Exception as exc:  # noqa: BLE001 - 任何初始化失败都要降级而不是崩掉
         return RuleBackend(), BackendInfo(

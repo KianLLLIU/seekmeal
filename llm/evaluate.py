@@ -225,6 +225,10 @@ def evaluate(
 
         # 端到端
         if router is not None:
+            # 清空对话历史再跑：训练语料是单轮的，评估也应按单轮算。
+            # 不清的话 Router 会把上一句的问答带进 prompt，输入分布与训练不一致，
+            # 微调模型的分数会凭空虚低——这是个很容易被误读成「微调没用」的坑。
+            router.history.clear()
             res = router.handle(text)
             ok = bool(res.intent) and res.path not in ("error", "clarify")
             if ok:
@@ -250,7 +254,8 @@ def build_argparser() -> argparse.ArgumentParser:
     p.add_argument("--backend", default="rule",
                    help="rule / openai / llamacpp")
     p.add_argument("--data", required=True, help="测试集 json 路径")
-    p.add_argument("--model", default="", help="模型名或 GGUF 路径")
+    p.add_argument("--model", default="", help="模型名 / GGUF 路径 / 本地模型目录")
+    p.add_argument("--adapter", default="", help="LoRA 适配器目录（--backend hf 时用）")
     p.add_argument("--base-url", default="http://127.0.0.1:1234/v1")
     p.add_argument("--limit", type=int, default=0, help="只跑前 N 条，0 表示全部")
     p.add_argument("--json-out", default="", help="把完整报告写到该路径")
@@ -275,6 +280,11 @@ def main(argv: list[str] | None = None) -> int:
             print("需要 --model 指定 GGUF 路径", file=sys.stderr)
             return 2
         backend = make_backend("llamacpp", model_path=args.model)
+    elif args.backend in ("hf", "local"):
+        if not args.model:
+            print("需要 --model 指定基座模型目录", file=sys.stderr)
+            return 2
+        backend = make_backend("hf", model_path=args.model, adapter_path=args.adapter)
     else:
         print(f"未知后端：{args.backend}", file=sys.stderr)
         return 2
